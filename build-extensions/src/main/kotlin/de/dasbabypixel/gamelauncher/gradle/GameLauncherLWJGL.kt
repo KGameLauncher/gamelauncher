@@ -39,8 +39,6 @@ class GameLauncherLWJGL : Plugin<Project> {
 
         val extension = LWJGLExtension(natives, version)
         project.extensions.add("lwjgl", extension)
-
-
     }
 }
 

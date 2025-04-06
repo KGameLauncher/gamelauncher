@@ -11,7 +11,7 @@ val sourceLauncher = sourceSets.register("launcher")
 val sourceGraal = sourceSets.register("graal")
 
 kotlin {
-    jvmToolchain(22)
+    jvmToolchain(24)
 }
 
 dependencies {
@@ -28,7 +28,7 @@ graalvmNative {
     binaries {
         register("prod") {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(23)
+                languageVersion = JavaLanguageVersion.of(24)
                 vendor = JvmVendorSpec.GRAAL_VM
             }
             imageName = "engine"
@@ -37,7 +37,7 @@ graalvmNative {
         }
         register("dev") {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(23)
+                languageVersion = JavaLanguageVersion.of(24)
                 vendor = JvmVendorSpec.GRAAL_VM
             }
             imageName = "engine"

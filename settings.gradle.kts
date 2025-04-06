@@ -9,6 +9,12 @@ pluginManagement {
 }
 dependencyResolutionManagement {
     repositories {
+        maven("https://oss.sonatype.org/content/repositories/snapshots/") {
+            mavenContent {
+                includeGroup("org.lwjgl")
+                snapshotsOnly()
+            }
+        }
         mavenCentral()
         google()
     }
@@ -23,4 +29,16 @@ includeBuild("build-extensions")
 rootProject.name = "gamelauncher"
 
 include("engine")
-include("executables")
+include("engine:core")
+include("engine:implementation:core")
+include("engine:implementation:providers")
+include("engine:implementation:opengl")
+include("engine:implementation:lwjgl")
+//include("executables")
+
+val ideaVendor: String? = System.getProperty("idea.vendor.name")
+val isAndroid = ideaVendor != "JetBrains" || file("include.android").exists()
+logger.info("Running on Android: $isAndroid")
+if (isAndroid) { // Optimize build times: don't include android in normal IntelliJ
+    include("engine:implementation:android")
+}
