@@ -126,6 +126,8 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
         return runWindow {
             Thread.sleep(2000)
             SDL_ShowWindow(it)
+            val frame = renderThread.startNextFrame()
+            renderThread.awaitFrame(frame)
         }
     }
 
