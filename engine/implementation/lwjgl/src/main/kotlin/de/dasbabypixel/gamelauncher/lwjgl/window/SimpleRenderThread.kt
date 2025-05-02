@@ -24,7 +24,7 @@ class SimpleRenderThread(
         val size = window.framebufferSize
         GL.createCapabilities()
         sizeInternal(size.width, size.height)
-        GL46.glClearColor(1F, 0F, 0F, 0.5F)
+        GL46.glClearColor(0F, 0F, 0F, 0F)
         Thread.sleep(400)
     }
 

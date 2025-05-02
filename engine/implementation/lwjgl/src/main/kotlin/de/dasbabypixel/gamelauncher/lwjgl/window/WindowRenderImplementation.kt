@@ -3,6 +3,8 @@ package de.dasbabypixel.gamelauncher.lwjgl.window
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.glVertex2f
 import org.lwjgl.opengl.GL46
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.LockSupport
 
 interface WindowRenderImplementation {
     fun enable(window: LWJGLWindow): RenderImplementationRenderer
@@ -29,6 +31,15 @@ class DoubleBufferedAsyncRenderImpl : WindowRenderImplementation {
 
             val time = (System.currentTimeMillis() % 1000000).toFloat()
             GL46.glClear(GL46.GL_COLOR_BUFFER_BIT)
+            GL46.glColor4f(1F, 0F, 0F, 0.5F)
+            GL46.glBegin(GL46.GL_QUADS)
+            glVertex2f(-1F, -1F)
+            glVertex2f(-1F, 1F)
+            glVertex2f(1F, 1F)
+            glVertex2f(1F, -1F)
+            GL46.glEnd()
+
+            GL46.glColor4f(1F, 1F, 1F, 1F)
             GL46.glBegin(GL46.GL_TRIANGLES)
 //        glVertex2f(sin(time / 900), cos(time / 2763F))
 //        glVertex2f(cos(time / 1300 + 90), cos(time / 1050 + 10))
@@ -37,7 +48,7 @@ class DoubleBufferedAsyncRenderImpl : WindowRenderImplementation {
             glVertex2f(0F, 1F)
             glVertex2f(1F, 0F)
             GL46.glEnd()
-//            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500))
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500))
         }
     }
 }
