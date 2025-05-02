@@ -61,12 +61,10 @@ object GLFWThreadImplementation : InitialThread.Implementation {
         glfwTerminate()
     }
 
-    override fun signal(superSignal: Runnable) {
-        println("signal")
+    override fun customSignal(): Boolean {
         glfwPostEmptyEvent()
+        return true
     }
-
-    override fun customSignal(): Boolean = true
 
     override fun waitForSignal(superWait: Runnable) = superWait.run()
 

@@ -2,6 +2,7 @@ package de.dasbabypixel.gamelauncher.lwjgl.window.sdl
 
 import de.dasbabypixel.gamelauncher.api.config.Config
 import de.dasbabypixel.gamelauncher.api.launcherHandlesException
+import de.dasbabypixel.gamelauncher.api.util.Vec2i
 import de.dasbabypixel.gamelauncher.api.util.concurrent.FrameSync
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
 import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
@@ -10,9 +11,9 @@ import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.lwjgl.window.*
 import org.lwjgl.opengl.GL
 import org.lwjgl.sdl.SDLVideo.*
+import org.lwjgl.system.MemoryStack
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks.ReentrantLock
 
 class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     companion object {
@@ -22,6 +23,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     override val frameSync: FrameSync = FrameSync()
     override val implName: String = "SDL"
     override val id = idCounter.incrementAndGet()
+    override lateinit var framebufferSize: Vec2i
     private val group: ThreadGroup = ThreadGroup.create("SDLWindow-{$id}")
     private var requestCloseCallback: ((window: LWJGLWindow) -> Unit)? = null
     private var framebufferSizeCallback: ((window: LWJGLWindow, width: Int, height: Int) -> Unit)? = null
@@ -40,6 +42,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     }
 
     fun handleFramebufferUpdate(w: Int, h: Int) {
+        framebufferSize = Vec2i(w, h)
         renderThread.framebufferUpdate(w, h)
         framebufferSizeCallback?.invoke(this, w, h)
     }
@@ -67,6 +70,12 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
             )
             sdlWindowPtr = window
             sdlWindowId = SDL_GetWindowID(sdlWindowPtr)
+            framebufferSize = MemoryStack.stackPush().use {
+                val width = it.mallocInt(1)
+                val height = it.mallocInt(1)
+                SDL_GetWindowSizeInPixels(sdlWindowPtr, width, height)
+                Vec2i(width.get(0), height.get(0))
+            }
             SDLThreadImplementation.addWindow(this)
         }
     }
@@ -114,21 +123,14 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     }
 
     override fun show(): CompletableFuture<Unit> {
-        return runWindow { SDL_ShowWindow(it) }
+        return runWindow {
+            Thread.sleep(2000)
+            SDL_ShowWindow(it)
+        }
     }
 
     override fun hide(): CompletableFuture<Unit> {
         return runWindow { SDL_HideWindow(it) }
-    }
-
-    private fun exit(): CompletableFuture<Unit> {
-        return runWindow {
-            SDLThreadImplementation.removeWindow(this)
-            val ptr = sdlWindowPtr
-            sdlWindowPtr = 0L
-            sdlWindowId = 0
-            SDL_DestroyWindow(ptr)
-        }
     }
 
     private fun <T> runWindow(consumer: GameFunction<Long, T>): CompletableFuture<T> {
@@ -136,6 +138,14 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     }
 
     override fun cleanup0(): CompletableFuture<Unit> {
-        return exit()
+        return renderThread.cleanup().thenCompose {
+            runWindow {
+                SDLThreadImplementation.removeWindow(this)
+                val ptr = sdlWindowPtr
+                sdlWindowPtr = 0L
+                sdlWindowId = 0
+                SDL_DestroyWindow(ptr)
+            }
+        }
     }
 }

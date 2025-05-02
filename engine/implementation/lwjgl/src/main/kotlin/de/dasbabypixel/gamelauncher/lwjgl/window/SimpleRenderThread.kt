@@ -1,7 +1,6 @@
 package de.dasbabypixel.gamelauncher.lwjgl.window
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.FrameSync
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
 import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL46
@@ -22,14 +21,20 @@ class SimpleRenderThread(
 
     override fun startExecuting() {
         renderingInstance = window.startRendering()
+        val size = window.framebufferSize
         GL.createCapabilities()
+        sizeInternal(size.width, size.height)
         GL46.glClearColor(1F, 0F, 0F, 0.5F)
-        singleRender()
+        Thread.sleep(400)
+    }
+
+    private fun sizeInternal(width: Int, height: Int) {
+        val size = width.toUInt().toULong() shl 32 or height.toUInt().toULong()
+        framebufferLock.withLock { framebufferSize = size }
     }
 
     fun framebufferUpdate(width: Int, height: Int) {
-        val size = width.toUInt().toULong() shl 32 or height.toUInt().toULong()
-        framebufferLock.withLock { framebufferSize = size }
+        sizeInternal(width, height)
         signal()
     }
 
@@ -68,12 +73,12 @@ class SimpleRenderThread(
         frameSync.waitForFrame(frame)
     }
 
-    public override fun signal() {
+    override fun customSignal(): Boolean {
         startNextFrame()
+        return true
     }
 
     private fun singleRender() {
-        println("render")
         prepareFramebufferSize()
         renderLock.withLock {
             renderer?.render(window, preparedWidth, preparedHeight)

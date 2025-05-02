@@ -3,8 +3,6 @@ package de.dasbabypixel.gamelauncher.lwjgl.window
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.glVertex2f
 import org.lwjgl.opengl.GL46
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.LockSupport
 
 interface WindowRenderImplementation {
     fun enable(window: LWJGLWindow): RenderImplementationRenderer
@@ -26,7 +24,7 @@ class DoubleBufferedAsyncRenderImpl : WindowRenderImplementation {
 
     class DoubleBufferedAsyncRenderer(val window: LWJGLWindow) : RenderImplementationRenderer {
         override fun render(window: LWJGLWindow, framebufferWidth: Int, framebufferHeight: Int) {
-            println("Start render $framebufferWidth $framebufferHeight")
+//            println("Start render $framebufferWidth $framebufferHeight")
             GL11.glViewport(0, 0, framebufferWidth, framebufferHeight)
 
             val time = (System.currentTimeMillis() % 1000000).toFloat()

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import java.lang.Thread as JThread
 import java.lang.ThreadGroup as JThreadGroup
 
@@ -74,6 +75,7 @@ abstract class AbstractThread : AbstractGameResource, Thread {
     final override fun unpark() {
         LockSupport.unpark(threadImpl)
     }
+
     protected abstract fun run()
 
     protected fun run0() {
@@ -190,11 +192,11 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
     protected open fun postLoop() {
     }
 
-    protected open fun signal() {
+    protected fun signal() {
         lock.lock()
         try {
-            if (customSignal()) return
             hasWorkBool.set(true)
+            if (customSignal()) return
             hasWork.signal()
         } finally {
             lock.unlock()
@@ -207,14 +209,8 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
         if (hasWorkBool.compareAndSet(true, false)) return
 
         val custom1 = customAwait()
-        val custom: Boolean
         if (!custom1) {
-            lock.lock()
-            try {
-                custom = awaitWork()
-            } finally {
-                lock.unlock()
-            }
+            val custom = lock.withLock { awaitWork() }
             if (custom) {
                 customAwaitWork()
             }
@@ -223,14 +219,10 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
         }
     }
 
-    protected open fun customAwait(): Boolean {
-        return false
-    }
+    protected open fun customAwait(): Boolean = false
 
     protected open fun awaitWork(): Boolean {
-        if (!hasWorkBool.compareAndSet(true, false)) {
-            hasWork.await()
-        }
+        hasWork.await()
         return false
     }
 
@@ -238,7 +230,7 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
     }
 
     protected open fun shouldWaitForSignal(): Boolean {
-        return true
+        return !hasWorkBool.get() // could be outdated
     }
 
     override fun <T> submit(callable: GameCallable<T>): CompletableFuture<T> {

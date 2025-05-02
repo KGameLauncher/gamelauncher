@@ -1,11 +1,9 @@
 package de.dasbabypixel.gamelauncher.lwjgl.util.concurrent
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Executor
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.function.GameConsumer
 import de.dasbabypixel.gamelauncher.impl.util.concurrent.CommonThreadHelper
-import java.lang.Thread
 import java.util.function.BooleanSupplier
 import java.lang.Thread as JThread
 
@@ -47,10 +45,6 @@ class InitialThread private constructor(
         implementation.stopExecuting()
     }
 
-    override fun signal() {
-        implementation.signal { super.signal() }
-    }
-
     override fun awaitWork(): Boolean {
         return implementation.awaitWork { super.awaitWork() }
     }
@@ -88,8 +82,6 @@ class InitialThread private constructor(
         fun workExecution()
 
         fun stopExecuting()
-
-        fun signal(superSignal: Runnable)
 
         fun customSignal(): Boolean
 

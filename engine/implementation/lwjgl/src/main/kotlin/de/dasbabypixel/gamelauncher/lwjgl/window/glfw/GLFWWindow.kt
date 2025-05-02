@@ -2,6 +2,7 @@ package de.dasbabypixel.gamelauncher.lwjgl.window.glfw
 
 import de.dasbabypixel.gamelauncher.api.launcherHandlesException
 import de.dasbabypixel.gamelauncher.api.util.GameException
+import de.dasbabypixel.gamelauncher.api.util.Vec2i
 import de.dasbabypixel.gamelauncher.api.util.concurrent.Executor
 import de.dasbabypixel.gamelauncher.api.util.concurrent.FrameSync
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
@@ -9,7 +10,7 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.lwjgl.window.*
 import org.lwjgl.glfw.GLFW.*
-import org.lwjgl.opengl.GL
+import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
@@ -35,6 +36,8 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     override val id = idCounter.incrementAndGet()
     private var owned = false
     override val frameSync = FrameSync()
+    override lateinit var framebufferSize: Vec2i
+
     override fun startRendering(): LWJGLWindowImpl.RenderingInstance {
         creationFuture.join()
         makeCurrent()
@@ -42,6 +45,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun swapBuffers() {
+        println("swap $glfwId")
         glfwSwapBuffers(glfwId)
     }
 
@@ -54,7 +58,6 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     val creationFuture = CompletableFuture<Unit>()
     private var renderImplementation: WindowRenderImplementation? = null
     private var renderImplementationRenderer: RenderImplementationRenderer? = null
-
     private var requestCloseCallback: ((window: LWJGLWindow) -> Unit)? = null
     private var framebufferSizeCallback: ((window: LWJGLWindow, width: Int, height: Int) -> Unit)? = null
     var glfwId: Long = 0L
@@ -102,7 +105,12 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun show(): CompletableFuture<Unit> {
-        return runWindow { glfwShowWindow(it) }
+        return runWindow {
+            glfwShowWindow(it)
+            glfwSwapBuffers(it)
+            val frame = renderThread.startNextFrame()
+            renderThread.awaitFrame(frame)
+        }
     }
 
     override fun hide(): CompletableFuture<Unit> {
@@ -193,10 +201,17 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
                 }
                 glfwSetFramebufferSizeCallback(glfwId) { id, w, h ->
                     val cb = framebufferSizeCallback
+                    framebufferSize = Vec2i(w, h)
                     launcherHandlesException {
                         renderThread.framebufferUpdate(w, h)
                         cb?.invoke(this@GLFWWindow, w, h)
                     }
+                }
+                MemoryStack.stackPush().use {
+                    val width = it.mallocInt(1)
+                    val height = it.mallocInt(1)
+                    glfwGetFramebufferSize(glfwId, width, height)
+                    framebufferSize = Vec2i(width.get(0), height.get(0))
                 }
             } catch (t: Throwable) {
                 creationFuture.completeExceptionally(t)

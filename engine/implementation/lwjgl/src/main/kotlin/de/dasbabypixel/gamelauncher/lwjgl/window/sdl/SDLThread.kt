@@ -68,11 +68,41 @@ internal object SDLThreadImplementation : InitialThread.Implementation {
                         window.handleFramebufferUpdate(w, h)
                     }
 
+                    SDL_EVENT_MOUSE_MOTION -> {
+                    }
+
+                    SDL_EVENT_WINDOW_MOUSE_ENTER -> {
+                    }
+
+                    SDL_EVENT_WINDOW_MOUSE_LEAVE -> {
+                    }
+
+                    SDL_EVENT_WINDOW_EXPOSED -> {
+                    }
+
+                    SDL_EVENT_WINDOW_MOVED -> {
+                    }
+
+                    SDL_EVENT_WINDOW_RESIZED -> {
+                    }
+
+                    SDL_EVENT_WINDOW_SHOWN -> {
+                    }
+
+                    SDL_EVENT_WINDOW_HIDDEN -> {
+                    }
+
+                    SDL_EVENT_WINDOW_SAFE_AREA_CHANGED -> {
+                    }
+
                     SDL_EVENT_QUIT -> {
                         println("Request quit")
                     }
+
+                    else -> {
+                        println("${currentThread.name}: ${event.type().toHexString()}")
+                    }
                 }
-                println("${currentThread.name}: ${event.type().toHexString()}")
             } catch (t: Throwable) {
                 GameLauncher.handleException(t)
             }
@@ -112,11 +142,10 @@ internal object SDLThreadImplementation : InitialThread.Implementation {
         SDL_Quit()
     }
 
-    override fun signal(superSignal: Runnable) {
+    override fun customSignal(): Boolean {
         postEmptyEvent()
+        return true
     }
-
-    override fun customSignal(): Boolean = error("unsupported")
 
     private fun postEmptyEvent() {
         val event = SDL_Event.calloc().type(SDL_EVENT_USER)
