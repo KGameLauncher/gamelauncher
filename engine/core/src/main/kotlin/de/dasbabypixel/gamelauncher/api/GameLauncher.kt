@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
+import kotlin.system.exitProcess
 
 abstract class GameLauncher : Providable {
     companion object {
@@ -25,7 +26,12 @@ abstract class GameLauncher : Providable {
         }
 
         fun handleException(ex: Throwable) {
-            launcher.get()!!.handleException(ex)
+            try {
+                launcher.get()!!.handleException(ex)
+            } catch (t: Throwable) {
+                logger.error("Failed to handle exception and properly shut down", t)
+                exitProcess(0)
+            }
         }
     }
 

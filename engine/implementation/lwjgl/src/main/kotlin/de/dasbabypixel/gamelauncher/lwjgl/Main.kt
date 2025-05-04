@@ -22,7 +22,7 @@ fun main(args: Array<String>) {
     Logging.out.print(Ansi.ansi().eraseScreen())
     Logging.out.flush()
     val latch = CountDownLatch(1)
-    thread(isDaemon = true, priority = Thread.MAX_PRIORITY) {
+    thread(name = "InfinitySleeper", isDaemon = true, priority = Thread.MAX_PRIORITY) {
         latch.countDown()
         Thread.sleep(9223372036854775783)
     }

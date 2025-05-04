@@ -4,12 +4,15 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
 import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL46
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class SimpleRenderThread(
     group: ThreadGroup, override val window: LWJGLWindowImpl
-) : AbstractExecutorThread(group, "${window.implName}RenderThread-${window.id}"), LWJGLRenderThread {
+) : AbstractExecutorThread(
+    group, "${window.implName}RenderThread-${window.id}"
+), LWJGLRenderThread {
     private val frameSync = window.frameSync
     private val renderLock = ReentrantLock()
     private val framebufferLock = ReentrantLock()
@@ -18,14 +21,16 @@ class SimpleRenderThread(
     private var preparedHeight: Int = 0
     private var renderer: RenderImplementationRenderer? = null
     private var renderingInstance: LWJGLWindowImpl.RenderingInstance? = null
+    override val started: CompletableFuture<Unit> = CompletableFuture()
 
     override fun startExecuting() {
+        Thread.sleep(400)
         renderingInstance = window.startRendering()
         val size = window.framebufferSize
         GL.createCapabilities()
         sizeInternal(size.width, size.height)
         GL46.glClearColor(0F, 0F, 0F, 0F)
-        Thread.sleep(400)
+        started.complete(Unit)
     }
 
     private fun sizeInternal(width: Int, height: Int) {

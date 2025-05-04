@@ -1,5 +1,6 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
+import de.dasbabypixel.gamelauncher.api.GameLauncher
 import de.dasbabypixel.gamelauncher.api.util.Debug
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.function.GameCallable
@@ -143,6 +144,8 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
     protected val count = AtomicInteger(0)
     protected val hasWork = lock.newCondition()
     protected val hasWorkBool = AtomicBoolean(false)
+    protected open val hardFailOnException
+        get() = true
 
     constructor(group: ThreadGroup) : super(group)
     constructor(group: ThreadGroup, daemon: Boolean) : super(group, daemon)
@@ -162,6 +165,9 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
         } catch (t: Throwable) {
             logger.error("Exception in thread {}", thread.name, t)
             exitFuture.completeExceptionally(t)
+            if (hardFailOnException) {
+                GameLauncher.handleException(t)
+            }
         } finally {
             logger.debug("Stopping $name")
             exitFuture.complete(Unit)

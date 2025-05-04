@@ -1,13 +1,16 @@
 package de.dasbabypixel.gamelauncher.lwjgl.window.glfw
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ExecutorThread
+import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.InitialThread
 import de.dasbabypixel.gamelauncher.lwjgl.window.WrappingExecutorThread
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.glfw.GLFWErrorCallback
 import org.lwjgl.system.APIUtil
+import java.util.concurrent.CountDownLatch
 import java.util.function.BooleanSupplier
+import kotlin.concurrent.thread
 
 object GLFWThread : WrappingExecutorThread {
     override lateinit var handle: ExecutorThread
@@ -48,6 +51,21 @@ object GLFWThreadImplementation : InitialThread.Implementation {
         }
         initialized = true
         GLFWMonitors // CL-Init GLFWMonitors
+
+        glfwDefaultWindowHints()
+        val w1 = glfwCreateWindow(100, 100, "", 0L, 0L)
+        val n = CountDownLatch(1)
+        thread {
+            glfwMakeContextCurrent(w1)
+            glfwMakeContextCurrent(0L)
+            n.countDown()
+            Thread.sleep(1000)
+        }
+
+        n.await()
+        glfwDefaultWindowHints()
+        val w2 = glfwCreateWindow(100, 100, "", 0L, w1)
+        println(w2)
     }
 
     override fun workExecution() {

@@ -11,6 +11,7 @@ plugins {
 dependencies {
     api(projects.engine.implementation.providers)
     api(projects.engine.implementation.core)
+    api(projects.engine.implementation.opengl)
 
     api(libs.bundles.logging.runtime)
     api(libs.bundles.jline)
@@ -63,6 +64,7 @@ kotlin {
 
 java {
     targetCompatibility = JavaVersion.VERSION_23 // kotlin does not yet compile to jdk 24
+    disableAutoTargetJvm()
 }
 
 abstract class Template : JavaExec() {

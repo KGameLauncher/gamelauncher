@@ -9,6 +9,7 @@ object SDLWindowSystem : WindowSystem {
         val window = SDLWindow()
         window.create().join()
         window.renderThread.start()
+        window.renderThread.submitGR {}.join() // Wait for render thread to start
         return window
     }
 
