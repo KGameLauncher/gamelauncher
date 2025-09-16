@@ -42,7 +42,7 @@ abstract class GameLauncher : Providable {
 
 @OptIn(ExperimentalContracts::class)
 inline fun launcherHandlesException(function: () -> Unit) {
-    contract { callsInPlace(function, InvocationKind.EXACTLY_ONCE) }
+    contract { callsInPlace(function, InvocationKind.AT_MOST_ONCE) }
     try {
         function()
     } catch (t: Throwable) {

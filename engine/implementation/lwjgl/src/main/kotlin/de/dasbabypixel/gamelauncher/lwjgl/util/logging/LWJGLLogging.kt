@@ -7,13 +7,16 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
 import de.dasbabypixel.gamelauncher.api.util.logging.Logging
+import de.dasbabypixel.gamelauncher.api.util.logging.Markers
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.impl.util.logging.LoggingPrintStream
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
+import org.lwjgl.system.Configuration
 import java.util.concurrent.CompletableFuture
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -45,6 +48,12 @@ class LWJGLLogging {
 
             val reader = LineReaderBuilder.builder().appName("GameLauncher").terminal(terminal).build()
             Log4jConfiguration.setup(useAnsi, reader)
+
+            if (Debug.debug) {
+                val stream = LoggingPrintStream(getLogger<LWJGLLogging>(Markers.LWJGL), printLocation = false)
+                Configuration.DEBUG_STREAM.set(stream)
+            }
+
             reader.option(LineReader.Option.AUTO_GROUP, false)
             reader.option(LineReader.Option.AUTO_MENU_LIST, true)
             reader.option(LineReader.Option.AUTO_FRESH_LINE, true)
@@ -69,7 +78,7 @@ class LWJGLLogging {
                             if (line == "exit") GameLauncher.stop()
                             logger.info("Read $line")
                         } catch (_: EndOfFileException) {
-                        } catch (e: UserInterruptException) {
+                        } catch (_: UserInterruptException) {
                             Logging.out.println("Interrupted")
                             Thread.sleep(1000)
                             GameLauncher.stop()

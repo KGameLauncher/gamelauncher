@@ -9,8 +9,7 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.api.util.function.GameFunction
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.lwjgl.window.*
-import org.lwjgl.opengl.GL
-import org.lwjgl.sdl.SDLVideo
+import org.lwjgl.opengles.GLES
 import org.lwjgl.sdl.SDLVideo.*
 import org.lwjgl.system.MemoryStack
 import java.util.concurrent.CompletableFuture
@@ -99,8 +98,8 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
             val ctx: Long = runWindow {
                 val ctx = SDL_GL_CreateContext(sdlWindowPtr)
                 if (ctx == 0L) checkError()
-                GL.createCapabilities()
-                GL.setCapabilities(null)
+                GLES.createCapabilities()
+                GLES.setCapabilities(null)
                 if (!SDL_GL_MakeCurrent(sdlWindowPtr, 0L)) checkError()
                 ctx
             }.join()

@@ -2,8 +2,9 @@ package de.dasbabypixel.gamelauncher.lwjgl.window
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
+import de.dasbabypixel.gamelauncher.opengl.GLProvider
 import org.lwjgl.opengl.GL
-import org.lwjgl.opengl.GL46
+import org.lwjgl.opengles.GLES
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -17,19 +18,20 @@ class SimpleRenderThread(
     private val renderLock = ReentrantLock()
     private val framebufferLock = ReentrantLock()
     private var framebufferSize: ULong = 0uL
-    private var preparedWidth: Int = 0
-    private var preparedHeight: Int = 0
+    private var preparedWidth: UInt = 0u
+    private var preparedHeight: UInt = 0u
     private var renderer: RenderImplementationRenderer? = null
     private var renderingInstance: LWJGLWindowImpl.RenderingInstance? = null
+    private val gl = GLProvider.GLES
     override val started: CompletableFuture<Unit> = CompletableFuture()
 
     override fun startExecuting() {
         Thread.sleep(400)
         renderingInstance = window.startRendering()
         val size = window.framebufferSize
-        GL.createCapabilities()
+        GLES.createCapabilities()
         sizeInternal(size.width, size.height)
-        GL46.glClearColor(0F, 0F, 0F, 0F)
+        gl.glClearColor(0F, 0F, 0F, 0F)
         started.complete(Unit)
     }
 
@@ -40,13 +42,15 @@ class SimpleRenderThread(
 
     fun framebufferUpdate(width: Int, height: Int) {
         sizeInternal(width, height)
-        signal()
+//        signal()
+        val frame = startNextFrame()
+        awaitFrame(frame)
     }
 
     private fun prepareFramebufferSize() {
         val size = framebufferLock.withLock { framebufferSize }
-        preparedWidth = (size shr 32).toInt()
-        preparedHeight = size.toInt()
+        preparedWidth = (size shr 32).toUInt()
+        preparedHeight = size.toUInt()
     }
 
     fun setRenderer(renderer: RenderImplementationRenderer?) {
@@ -88,6 +92,7 @@ class SimpleRenderThread(
         renderLock.withLock {
             renderer?.render(window, preparedWidth, preparedHeight)
             renderingInstance!!.swapBuffers()
+            println("swap")
         }
     }
 

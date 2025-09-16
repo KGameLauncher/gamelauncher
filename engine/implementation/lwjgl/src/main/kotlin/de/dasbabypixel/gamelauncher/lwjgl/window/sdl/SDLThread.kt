@@ -12,7 +12,6 @@ import de.dasbabypixel.gamelauncher.lwjgl.window.WrappingExecutorThread
 import org.lwjgl.sdl.SDLError
 import org.lwjgl.sdl.SDLEvents.*
 import org.lwjgl.sdl.SDLInit.*
-import org.lwjgl.sdl.SDLVideo
 import org.lwjgl.sdl.SDLVideo.*
 import org.lwjgl.sdl.SDL_Event
 import org.lwjgl.sdl.SDL_EventFilter
@@ -66,7 +65,7 @@ internal object SDLThreadImplementation : InitialThread.Implementation {
             try {
                 val event = SDL_Event.create(eventPtr)
                 when (event.type()) {
-                    SDL_EVENT_WINDOW_CLOSE_REQUESTED -> {
+                    SDL_EVENT_WINDOW_CLOSE_REQUESTED -> run {
                         assertOnSDLThread()
                         val windowEvent = event.window()
                         val window = windows[windowEvent.windowID()]!!

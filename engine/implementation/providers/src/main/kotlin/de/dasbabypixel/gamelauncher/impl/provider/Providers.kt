@@ -16,6 +16,8 @@ object Providers {
         return providers(cls).get(name)
     }
 
+    inline fun <reified T : Providable> provider(name: String) = provider(T::class, name)
+
     private fun <T : Providable> providers(cls: KClass<in T>): ClassEntry<T> {
         return (map[cls]
             ?: throw ProviderNotRegisteredException("Missing provider with class ${cls.qualifiedName}")) as ClassEntry<T>
