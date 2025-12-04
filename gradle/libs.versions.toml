@@ -13,7 +13,7 @@ lwjgl = "3.4.0-SNAPSHOT"
 joml = "1.10.8"
 launch4j = "3.0.6"
 graal-native = "0.10.3"
-idea-ext = "1.1.9"
+idea-ext = "1.1.10"
 gles-docs = "0.0.8"
 
 [libraries]
