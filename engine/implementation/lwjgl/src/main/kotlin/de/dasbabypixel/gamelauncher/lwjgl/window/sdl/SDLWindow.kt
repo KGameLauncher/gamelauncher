@@ -8,12 +8,14 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
 import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.api.util.function.GameFunction
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
 import de.dasbabypixel.gamelauncher.lwjgl.window.*
-import org.lwjgl.opengles.GLES
 import org.lwjgl.sdl.SDLVideo.*
 import org.lwjgl.system.MemoryStack
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     companion object {
@@ -24,6 +26,8 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     override val implName: String = "SDL"
     override val id = idCounter.incrementAndGet()
     override lateinit var framebufferSize: Vec2i
+    override val creationFuture = CompletableFuture<Unit>()
+    private val lock = ReentrantLock()
     private val group: ThreadGroup = ThreadGroup.create("SDLWindow-{$id}")
     private var requestCloseCallback: ((window: LWJGLWindow) -> Unit)? = null
     private var framebufferSizeCallback: ((window: LWJGLWindow, width: Int, height: Int) -> Unit)? = null
@@ -43,6 +47,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
 
     fun handleFramebufferUpdate(w: Int, h: Int) {
         framebufferSize = Vec2i(w, h)
+        println("update $w $h")
         renderThread.framebufferUpdate(w, h)
         framebufferSizeCallback?.invoke(this, w, h)
     }
@@ -57,6 +62,18 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
             val renderer = renderImplementation.enable(this)
             renderImplementationRenderer = renderer
             renderThread.setRenderer(renderer)
+        }
+    }
+
+    override fun requestFocus(): CompletableFuture<Unit> {
+        return runWindow {
+            SDL_FlashWindow(it, SDL_FLASH_UNTIL_FOCUSED)
+        }
+    }
+
+    override fun forceFocus(): CompletableFuture<Unit> {
+        return runWindow {
+            SDL_RaiseWindow(it)
         }
     }
 
@@ -93,13 +110,15 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
         }
     }
 
+    private fun validWindow(): Boolean = sdlWindowPtr != 0L
+
     override fun startRendering(): LWJGLWindowImpl.RenderingInstance {
         return object : LWJGLWindowImpl.RenderingInstance {
             val ctx: Long = runWindow {
                 val ctx = SDL_GL_CreateContext(sdlWindowPtr)
                 if (ctx == 0L) checkError()
-                GLES.createCapabilities()
-                GLES.setCapabilities(null)
+                LWJGLGLES.createCapabilities()
+                LWJGLGLES.unsetCapabilities()
                 if (!SDL_GL_MakeCurrent(sdlWindowPtr, 0L)) checkError()
                 ctx
             }.join()
@@ -109,8 +128,15 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
                 println("current int ${currentThread.name}")
             }
 
-            override fun swapBuffers() {
-                if (!SDL_GL_SwapWindow(sdlWindowPtr)) checkError()
+            override fun swapBuffers(): Boolean {
+                return lock.withLock {
+                    if (!validWindow()) {
+                        false
+                    } else {
+                        if (!SDL_GL_SwapWindow(sdlWindowPtr)) checkError()
+                        true
+                    }
+                }
             }
 
             override fun stopRendering() {
@@ -132,8 +158,8 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
 
     override fun show(): CompletableFuture<Unit> {
         return runWindow {
-            Thread.sleep(2000)
             if (!SDL_ShowWindow(it)) checkError()
+        }.thenApply {
             val frame = renderThread.startNextFrame()
             renderThread.awaitFrame(frame)
         }
@@ -146,11 +172,16 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     }
 
     private fun <T> runWindow(consumer: GameFunction<Long, T>): CompletableFuture<T> {
-        return SDLThread.submitGC { consumer.apply(sdlWindowPtr) }
+        return SDLThread.submitGC {
+            lock.withLock {
+                if (!validWindow()) error("Window pointer not valid")
+                consumer.apply(sdlWindowPtr)
+            }
+        }
     }
 
     override fun cleanup0(): CompletableFuture<Unit> {
-        return renderThread.cleanup().thenCompose {
+        return renderThread.cleanupAsync().thenCompose {
             runWindow {
                 SDLThreadImplementation.removeWindow(this)
                 val ptr = sdlWindowPtr

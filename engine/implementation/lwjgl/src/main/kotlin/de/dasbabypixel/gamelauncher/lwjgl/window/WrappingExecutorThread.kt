@@ -31,7 +31,7 @@ interface WrappingExecutorThread : ExecutorThread {
     override val thread: Thread
         get() = handle
 
-    override fun cleanup(): CompletableFuture<Unit> = handle.cleanup()
+    override fun cleanupAsync(): CompletableFuture<Unit> = handle.cleanupAsync()
 
     override fun <T> submit(callable: GameCallable<T>): CompletableFuture<T> = handle.submit(callable)
 }

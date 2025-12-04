@@ -2,9 +2,8 @@ package de.dasbabypixel.gamelauncher.lwjgl.window
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
+import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
 import de.dasbabypixel.gamelauncher.opengl.GLProvider
-import org.lwjgl.opengl.GL
-import org.lwjgl.opengles.GLES
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -12,7 +11,7 @@ import kotlin.concurrent.withLock
 class SimpleRenderThread(
     group: ThreadGroup, override val window: LWJGLWindowImpl
 ) : AbstractExecutorThread(
-    group, "${window.implName}RenderThread-${window.id}"
+    group, "${window.implName}RenderThread-${window.id}", customAwaitingSystem = true
 ), LWJGLRenderThread {
     private val frameSync = window.frameSync
     private val renderLock = ReentrantLock()
@@ -26,10 +25,9 @@ class SimpleRenderThread(
     override val started: CompletableFuture<Unit> = CompletableFuture()
 
     override fun startExecuting() {
-        Thread.sleep(400)
         renderingInstance = window.startRendering()
         val size = window.framebufferSize
-        GLES.createCapabilities()
+        LWJGLGLES.createCapabilities()
         sizeInternal(size.width, size.height)
         gl.glClearColor(0F, 0F, 0F, 0F)
         started.complete(Unit)
@@ -82,22 +80,22 @@ class SimpleRenderThread(
         frameSync.waitForFrame(frame)
     }
 
-    override fun customSignal(): Boolean {
+    override fun customSignal() {
         startNextFrame()
-        return true
     }
+
+    override fun customAwaitWork() = error("Should not be called")
 
     private fun singleRender() {
         prepareFramebufferSize()
-        renderLock.withLock {
-            renderer?.render(window, preparedWidth, preparedHeight)
-            renderingInstance!!.swapBuffers()
-            println("swap")
-        }
+        val renderer = renderLock.withLock { renderer }
+
+        renderer?.render(window, preparedWidth, preparedHeight)
+        renderingInstance!!.swapBuffers()
     }
 
     override fun stopExecuting() {
-        GL.setCapabilities(null)
+        LWJGLGLES.unsetCapabilities()
         renderingInstance!!.stopRendering()
         renderingInstance = null
     }

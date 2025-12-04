@@ -6,7 +6,10 @@ interface LWJGLWindowImpl : LWJGLWindow {
     fun startRendering(): RenderingInstance
 
     interface RenderingInstance {
-        fun swapBuffers()
+        /**
+         * Swaps the framebuffers. This will return false if the window has been destroyed
+         */
+        fun swapBuffers(): Boolean
         fun stopRendering()
     }
 }

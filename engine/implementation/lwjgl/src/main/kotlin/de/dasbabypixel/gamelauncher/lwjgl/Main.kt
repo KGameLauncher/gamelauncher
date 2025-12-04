@@ -10,18 +10,19 @@ import de.dasbabypixel.gamelauncher.impl.util.concurrent.ThreadGroupCache
 import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.DisruptorMPSC
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.InitialThread
-import de.dasbabypixel.gamelauncher.lwjgl.window.LWJGLWindow
+import de.dasbabypixel.gamelauncher.lwjgl.window.DoubleBufferedAsyncRenderImpl
 import de.dasbabypixel.gamelauncher.lwjgl.window.WindowSystem
 import de.dasbabypixel.gamelauncher.opengl.ProvidableGL
 import org.jline.jansi.Ansi
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 val startInitialThreadLatch = CountDownLatch(1)
 val startLauncherLatch = CountDownLatch(1)
-fun main(args: Array<String>) {
+fun main() {
     Logging.out.print(Ansi.ansi().eraseScreen())
     Logging.out.flush()
     val latch = CountDownLatch(1)
@@ -46,8 +47,9 @@ fun main(args: Array<String>) {
             object : AbstractThread(ThreadGroupCache[Thread.currentThread().threadGroup], "entrypoint") {
                 override fun run() {
                     try {
+                        WindowSystem.windowSystem.track()
                         start.run()
-                        cleanup()
+                        cleanupAsync().join()
                     } catch (t: Throwable) {
                         logger.error("Failed to run GameLauncher", t)
                         exitProcess(0)
@@ -61,11 +63,10 @@ fun main(args: Array<String>) {
             startLauncherLatch.countDown()
         })
     } else {
+        WindowSystem.windowSystem.track()
         start.run()
     }
 }
-
-lateinit var window: LWJGLWindow
 
 fun started() {
     startInitialThreadLatch.countDown()
@@ -76,17 +77,41 @@ fun started() {
     ProvidableGL(LWJGLGLES).registerProvider("gles")
 //    GLFWThread.start()
 
-//    window = WindowSystem.windowSystem.createWindow()
-//    window.requestCloseCallback { GameLauncher.stop() }
-////    window.frameSync.updateFramerate(30)
-//    window.changeRenderImplementation(DoubleBufferedAsyncRenderImpl())
-//    window.show().thenRun {
-//        println("shown")
-//    }
+    val count = AtomicInteger(1)
+    for (i in 0 until count.get()) {
+        val window = WindowSystem.windowSystem.createWindow()
+        var closed = false
+        window.requestCloseCallback {
+            if (closed) return@requestCloseCallback
+            closed = true
+            window.cleanupAsync().thenRun {
+                if (count.decrementAndGet() == 0) {
+                    try {
+                        GameLauncher.stop()
+                    } catch (t: Throwable) {
+                        t.printStackTrace()
+                    }
+                }
+            }
+        }
+        window.forceFocus()
+        window.frameSync.updateFramerate(0)
+        Thread.startVirtualThread {
+            while (true) {
+                println(window.frameSync.frameCount.getAndSet(0))
+                Thread.sleep(1000)
+            }
+        }
+        window.changeRenderImplementation(DoubleBufferedAsyncRenderImpl())
+        window.show().thenRun {
+            println("shown")
+        }
+    }
 }
 
 fun stopped() {
 //    window.cleanup().join()
+    WindowSystem.windowSystem.cleanupAsync().join()
     InitialThread.cleanup()
 }
 

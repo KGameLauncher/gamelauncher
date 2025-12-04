@@ -10,10 +10,6 @@ plugins {
 val sourceLauncher = sourceSets.register("launcher")
 val sourceGraal = sourceSets.register("graal")
 
-kotlin {
-    jvmToolchain(24)
-}
-
 dependencies {
     "launcherImplementation"(projects.engine)
 
@@ -28,7 +24,7 @@ graalvmNative {
     binaries {
         register("prod") {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(24)
+                languageVersion = languageVersionLatest
                 vendor = JvmVendorSpec.GRAAL_VM
             }
             imageName = "engine"
@@ -37,7 +33,7 @@ graalvmNative {
         }
         register("dev") {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(24)
+                languageVersion = languageVersionLatest
                 vendor = JvmVendorSpec.GRAAL_VM
             }
             imageName = "engine"
@@ -109,7 +105,7 @@ tasks {
         doFirst { workingDir.mkdirs() }
         classpath(lwjglDev)
         javaLauncher = project.javaToolchains.launcherFor {
-            languageVersion = JavaLanguageVersion.of(23)
+            languageVersion = JavaLanguageVersion.of(25)
             vendor = JvmVendorSpec.GRAAL_VM
         }
         mainClass = lwjglMain

@@ -9,12 +9,11 @@ class FrameSync(
     private val signalSync: StateSynchronizer = StateSynchronizer()
 ) {
 
-    // -1 = unlimited, 0 = vsync, -2=on-demand
-    private var framerate = 0
     private val hasNewFramerate = AtomicBoolean(true)
     private val newFramerate = AtomicInteger(-2)
     private val incrementFrames = AtomicInteger(0)
     private val frameTracker = FrameTracker()
+    val frameCount = AtomicInteger(0)
 
     fun syncStart() {
         if (hasNewFramerate.compareAndSet(true, false)) {
@@ -26,6 +25,7 @@ class FrameSync(
     fun syncEnd() {
         frameTracker.syncEnd()
         frameSync.next()
+        frameCount.incrementAndGet()
     }
 
     fun waitForNextFrame() {
@@ -43,6 +43,7 @@ class FrameSync(
         return next
     }
 
+    // -1 = unlimited, 0 = vsync, -2=on-demand
     fun updateFramerate(framerate: Int) {
         this.newFramerate(framerate)
         this.hasNewFramerate(true)
@@ -50,7 +51,7 @@ class FrameSync(
 
     private fun setFramerate(framerate: Int) {
         frameTracker.frameTimeNanos = when (framerate) {
-            0 -> 0L
+            0 -> 1_000_000_000L / 240
             -1 -> 0L
             -2 -> -1L
             else -> 1_000_000_000L / framerate

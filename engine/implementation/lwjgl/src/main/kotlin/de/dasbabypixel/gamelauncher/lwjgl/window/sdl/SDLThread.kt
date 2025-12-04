@@ -12,11 +12,9 @@ import de.dasbabypixel.gamelauncher.lwjgl.window.WrappingExecutorThread
 import org.lwjgl.sdl.SDLError
 import org.lwjgl.sdl.SDLEvents.*
 import org.lwjgl.sdl.SDLInit.*
-import org.lwjgl.sdl.SDLVideo.*
 import org.lwjgl.sdl.SDL_Event
 import org.lwjgl.sdl.SDL_EventFilter
 import org.lwjgl.system.MemoryStack
-import java.util.function.BooleanSupplier
 
 object SDLThread : WrappingExecutorThread {
     override lateinit var handle: ExecutorThread
@@ -52,14 +50,14 @@ internal object SDLThreadImplementation : InitialThread.Implementation {
             error("Failed to initialize SDL: " + SDLError.SDL_GetError())
         }
 
-        val window1 = SDL_CreateWindow(
-            "",
-            200,
-            200,
-            SDL_WINDOW_RESIZABLE or SDL_WINDOW_TRANSPARENT or SDL_WINDOW_OPENGL
-        )
-        SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1)
-        val ctx1 = SDL_GL_CreateContext(window1)
+//        val window1 = SDL_CreateWindow(
+//            "",
+//            200,
+//            200,
+//            SDL_WINDOW_RESIZABLE or SDL_WINDOW_TRANSPARENT or SDL_WINDOW_OPENGL
+//        )
+//        SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1)
+//        val ctx1 = SDL_GL_CreateContext(window1)
 
         filter = SDL_EventFilter.create { _, eventPtr ->
             try {
@@ -155,9 +153,8 @@ internal object SDLThreadImplementation : InitialThread.Implementation {
         SDL_Quit()
     }
 
-    override fun customSignal(): Boolean {
+    override fun customSignal() {
         postEmptyEvent()
-        return true
     }
 
     private fun postEmptyEvent() {
@@ -165,12 +162,6 @@ internal object SDLThreadImplementation : InitialThread.Implementation {
         if (!SDL_PushEvent(event)) checkError()
         event.free()
     }
-
-    override fun waitForSignal(superWait: Runnable) = superWait.run()
-
-    override fun customAwait(): Boolean = true
-
-    override fun awaitWork(superAwaitWork: BooleanSupplier): Boolean = error("unsupported")
 
     override fun customAwaitWork() {
         SDL_WaitEvent(null)

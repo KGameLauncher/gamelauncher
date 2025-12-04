@@ -1,16 +1,12 @@
 package de.dasbabypixel.gamelauncher.lwjgl.window.glfw
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ExecutorThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.InitialThread
 import de.dasbabypixel.gamelauncher.lwjgl.window.WrappingExecutorThread
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.glfw.GLFWErrorCallback
 import org.lwjgl.system.APIUtil
-import java.util.concurrent.CountDownLatch
-import java.util.function.BooleanSupplier
-import kotlin.concurrent.thread
 
 object GLFWThread : WrappingExecutorThread {
     override lateinit var handle: ExecutorThread
@@ -50,26 +46,12 @@ object GLFWThreadImplementation : InitialThread.Implementation {
             throw IllegalStateException("Failed to initialize GLFW")
         }
         initialized = true
+        @Suppress("UnusedExpression")
         GLFWMonitors // CL-Init GLFWMonitors
-
-        glfwDefaultWindowHints()
-        val w1 = glfwCreateWindow(100, 100, "", 0L, 0L)
-        val n = CountDownLatch(1)
-        thread {
-            glfwMakeContextCurrent(w1)
-            glfwMakeContextCurrent(0L)
-            n.countDown()
-            Thread.sleep(1000)
-        }
-
-        n.await()
-        glfwDefaultWindowHints()
-        val w2 = glfwCreateWindow(100, 100, "", 0L, w1)
-        println(w2)
     }
 
     override fun workExecution() {
-        glfwPollEvents()
+        // Events are already processed by glfwWaitEvents
     }
 
     override fun stopExecuting() {
@@ -79,16 +61,9 @@ object GLFWThreadImplementation : InitialThread.Implementation {
         glfwTerminate()
     }
 
-    override fun customSignal(): Boolean {
+    override fun customSignal() {
         glfwPostEmptyEvent()
-        return true
     }
-
-    override fun waitForSignal(superWait: Runnable) = superWait.run()
-
-    override fun customAwait(): Boolean = true
-
-    override fun awaitWork(superAwaitWork: BooleanSupplier): Boolean = error("unsupported")
 
     override fun customAwaitWork() {
         glfwWaitEvents()

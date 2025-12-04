@@ -7,6 +7,10 @@ repositories {
     gradlePluginPortal()
 }
 
+dependencies {
+    compileOnly(libs.kotlin.gradle.plugin)
+}
+
 gradlePlugin {
     plugins {
         register("gamelauncherParent") {
@@ -16,6 +20,10 @@ gradlePlugin {
         register("gamelauncherLWJGL") {
             id = "gamelauncher-lwjgl"
             implementationClass = "de.dasbabypixel.gamelauncher.gradle.GameLauncherLWJGL"
+        }
+        register("gamelauncherKotlin") {
+            id = "gamelauncher-kotlin"
+            implementationClass = "de.dasbabypixel.gamelauncher.gradle.GameLauncherKotlinPlugin"
         }
     }
 }

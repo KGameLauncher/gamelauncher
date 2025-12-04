@@ -3,10 +3,7 @@ package de.dasbabypixel.gamelauncher.lwjgl.window.glfw
 import de.dasbabypixel.gamelauncher.api.launcherHandlesException
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.Vec2i
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Executor
-import de.dasbabypixel.gamelauncher.api.util.concurrent.FrameSync
-import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
-import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
+import de.dasbabypixel.gamelauncher.api.util.concurrent.*
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.lwjgl.window.*
 import org.lwjgl.glfw.GLFW.*
@@ -16,6 +13,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.withLock
+import kotlin.concurrent.write
 
 class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResource(), LWJGLWindowImpl,
     LWJGLWindowImpl.RenderingInstance {
@@ -31,7 +32,12 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         this.sharedWindows.add(this)
     }
 
-    private val modifyLock = ReentrantLock()
+    private val ownedLock = ReentrantLock()
+
+    /**
+     * Lock that holds whether the window exists/is valid
+     */
+    private val lock = ReentrantReadWriteLock()
     override val implName = "GLFW"
     override val id = idCounter.incrementAndGet()
     private var owned = false
@@ -44,9 +50,12 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         return this
     }
 
-    override fun swapBuffers() {
-        println("swap $glfwId")
-        glfwSwapBuffers(glfwId)
+    override fun swapBuffers(): Boolean {
+        lock.read {
+            if (glfwId == 0L) return false
+            glfwSwapBuffers(glfwId)
+            return true
+        }
     }
 
     override fun stopRendering() {
@@ -55,7 +64,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
 
     private val group: ThreadGroup = ThreadGroup.create("GLFWWindow-${id}", parent?.group ?: currentThread.group)
     override val renderThread: SimpleRenderThread = SimpleRenderThread(group, this)
-    val creationFuture = CompletableFuture<Unit>()
+    override val creationFuture = CompletableFuture<Unit>()
     private var renderImplementation: WindowRenderImplementation? = null
     private var renderImplementationRenderer: RenderImplementationRenderer? = null
     private var requestCloseCallback: ((window: LWJGLWindow) -> Unit)? = null
@@ -73,6 +82,18 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
             val renderer = renderImplementation.enable(this)
             renderImplementationRenderer = renderer
             renderThread.setRenderer(renderer)
+        }
+    }
+
+    override fun requestFocus(): CompletableFuture<Unit> {
+        return runWindow {
+            glfwRequestWindowAttention(it)
+        }
+    }
+
+    override fun forceFocus(): CompletableFuture<Unit> {
+        return runWindow {
+            glfwFocusWindow(it)
         }
     }
 
@@ -97,9 +118,11 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun cleanup0(): CompletableFuture<Unit> {
-        return renderThread.cleanup().thenCompose {
+        return renderThread.cleanupAsync().thenCompose {
             runWindow {
                 glfwDestroyWindow(it)
+            }.thenApplyAsync {
+                Thread.sleep(500)
             }
         }
     }
@@ -108,6 +131,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         return runWindow {
             glfwShowWindow(it)
             glfwSwapBuffers(it)
+        }.thenApply {
             val frame = renderThread.startNextFrame()
             renderThread.awaitFrame(frame)
         }
@@ -119,28 +143,26 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
 
     fun setTransparent(transparent: Boolean): CompletableFuture<Unit> {
         return runWindow {
-            glfwSetWindowAttrib(glfwId, GLFW_TRANSPARENT_FRAMEBUFFER, if (transparent) GLFW_TRUE else GLFW_FALSE)
+            glfwSetWindowAttrib(it, GLFW_TRANSPARENT_FRAMEBUFFER, if (transparent) GLFW_TRUE else GLFW_FALSE)
         }
     }
 
     private inline fun <T> runWindow(crossinline function: (Long) -> T): CompletableFuture<T> {
         return GLFWThread.submitGC {
-            val id = glfwId
-            if (id == 0L) throw GameException("GLFW ID not initialized")
-            function(id)
+            lock.read {
+                val id = glfwId
+                if (id == 0L) throw GameException("GLFW ID not initialized")
+                function(id)
+            }
         }
     }
 
     fun makeCurrent() {
         val thread = currentThread
         if (thread !is Executor) throw IllegalThreadStateException("Thread must be an executor thread to make a window current: $thread")
-        val lock = this.modifyLock
-        lock.lock()
-        try {
+        this.ownedLock.withLock {
             if (this.owned) throw IllegalStateException("Already owned")
             this.owned = true
-        } finally {
-            lock.unlock()
         }
         glfwMakeContextCurrent(glfwId)
         currentWindow.set(this)
@@ -151,13 +173,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         if (thread !is Executor) throw IllegalThreadStateException("Owner thread is not an executor thread. This should not be possible")
         if (currentWindow.get() != this) throw IllegalThreadStateException("Tried to release context from other thread than owner thread")
         if (!this.owned) throw IllegalStateException("Not currently owned. Should be impossible")
-        val lock = this.modifyLock
-        lock.lock()
-        try {
-            this.owned = false
-        } finally {
-            lock.unlock()
-        }
+        this.ownedLock.withLock { this.owned = false }
         glfwMakeContextCurrent(0L)
         currentWindow.remove()
     }
@@ -171,7 +187,6 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     private inner class GLFWWindowCreator : Runnable {
-
         override fun run() {
             try {
                 glfwDefaultWindowHints()
@@ -190,8 +205,11 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
                 val startWidth = primaryMode.width() / 2
                 val startHeight = primaryMode.height() / 2
 
-                glfwId = glfwCreateWindow(startWidth, startHeight, "GameLauncher", 0, 0)
+                val glfwId = glfwCreateWindow(startWidth, startHeight, "GameLauncher", 0, 0)
                 if (glfwId == 0L) glfwError()
+                lock.write {
+                    this@GLFWWindow.glfwId = glfwId
+                }
 
                 glfwSetWindowSizeLimits(glfwId, 1, 1, GLFW_DONT_CARE, GLFW_DONT_CARE)
 

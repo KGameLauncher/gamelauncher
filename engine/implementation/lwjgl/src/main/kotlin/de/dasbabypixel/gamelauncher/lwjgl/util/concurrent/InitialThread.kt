@@ -4,12 +4,11 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.function.GameConsumer
 import de.dasbabypixel.gamelauncher.impl.util.concurrent.CommonThreadHelper
-import java.util.function.BooleanSupplier
 import java.lang.Thread as JThread
 
 class InitialThread private constructor(
     private val implementation: Implementation, private val runningCallback: Runnable
-) : AbstractExecutorThread(CommonThreadHelper.initialThread) {
+) : AbstractExecutorThread(thread = CommonThreadHelper.initialThread, customAwaitingSystem = true) {
     companion object {
         fun init(implementation: Implementation, consumer: GameConsumer<ExecutorThread>, runningCallback: Runnable) {
             val initial = CommonThreadHelper.initialThread
@@ -24,7 +23,7 @@ class InitialThread private constructor(
         }
 
         fun cleanup() {
-            CommonThreadHelper.mappedInitialThread.cleanup().join()
+            CommonThreadHelper.mappedInitialThread.cleanupAsync().join()
         }
     }
 
@@ -45,24 +44,12 @@ class InitialThread private constructor(
         implementation.stopExecuting()
     }
 
-    override fun awaitWork(): Boolean {
-        return implementation.awaitWork { super.awaitWork() }
-    }
-
-    override fun customSignal(): Boolean {
+    override fun customSignal() {
         return implementation.customSignal()
-    }
-
-    override fun customAwait(): Boolean {
-        return implementation.customAwait()
     }
 
     override fun customAwaitWork() {
         return implementation.customAwaitWork()
-    }
-
-    override fun waitForSignal() {
-        implementation.waitForSignal { super.waitForSignal() }
     }
 
     override val customStart: Boolean
@@ -83,13 +70,7 @@ class InitialThread private constructor(
 
         fun stopExecuting()
 
-        fun customSignal(): Boolean
-
-        fun waitForSignal(superWait: Runnable)
-
-        fun customAwait(): Boolean
-
-        fun awaitWork(superAwaitWork: BooleanSupplier): Boolean
+        fun customSignal()
 
         fun customAwaitWork()
     }

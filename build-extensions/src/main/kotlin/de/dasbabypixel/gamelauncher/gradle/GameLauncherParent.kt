@@ -2,13 +2,15 @@ package de.dasbabypixel.gamelauncher.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 class GameLauncherParent : Plugin<Project> {
     override fun apply(target: Project) {
-
     }
 }
 
+val javaVersionLatest = 24
+val languageVersionLatest = JavaLanguageVersion.of(javaVersionLatest)
 val launcherGroup = "launcher"
 val lwjglMain = "de.dasbabypixel.gamelauncher.lwjgl.MainKt"
 val lwjglLauncherMain = "de.dasbabypixel.gamelauncher.lwjgl.launcher.MainKt"

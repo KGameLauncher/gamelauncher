@@ -214,6 +214,9 @@ object Log4jConfiguration {
         System.setErr(LoggingPrintStream(LoggerFactory.getLogger("stderr")))
     }
 
+    fun init() {
+    }
+
     fun exit() {
         System.setOut(Logging.out)
         System.setErr(Logging.err)

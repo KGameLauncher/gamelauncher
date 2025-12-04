@@ -43,7 +43,6 @@ abstract class AbstractGameResource : GameResource.StackCapable {
         }
     }
 
-    @Suppress("MemberVisibilityCanBePrivate")
     protected fun track(thread: Thread = currentThread) {
         if (!created.compareAndSet(false, true)) throw IllegalStateException("Already tracked")
         creationThreadName = thread.name
@@ -57,7 +56,7 @@ abstract class AbstractGameResource : GameResource.StackCapable {
 
     protected abstract fun cleanup0(): CompletableFuture<Unit>?
 
-    final override fun cleanup(): CompletableFuture<Unit> {
+    final override fun cleanupAsync(): CompletableFuture<Unit> {
         if (!created.get()) throw IllegalStateException("Resource was never tracked")
         if (calledCleanup.compareAndSet(false, true)) {
             if (ResourceTracker.enabled) {

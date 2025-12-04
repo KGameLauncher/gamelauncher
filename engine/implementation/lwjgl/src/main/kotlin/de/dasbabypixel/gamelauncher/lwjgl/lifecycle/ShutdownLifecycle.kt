@@ -32,7 +32,7 @@ object ShutdownLifecycle {
         val group = ThreadGroup.create("ShutdownThreads")
         val thread = object : AbstractThread(group, "ShutdownThread") {
             override fun run() {
-                this.cleanup()
+                this.cleanupAsync().join()
                 try {
                     stopped()
                 } catch (e: Throwable) {

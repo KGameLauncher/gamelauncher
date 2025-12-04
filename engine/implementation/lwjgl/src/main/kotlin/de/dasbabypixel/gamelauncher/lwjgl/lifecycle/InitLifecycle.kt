@@ -10,6 +10,12 @@ import java.util.*
 object InitLifecycle {
     fun init() {
         superEarlyInit()
+        setupDebugFlags()
+        LWJGLLogging.init()
+        started()
+    }
+
+    private fun setupDebugFlags() {
         if (Debug.debug) {
             Configuration.DEBUG.set(true)
             Configuration.DEBUG_MEMORY_ALLOCATOR.set(true)
@@ -19,8 +25,6 @@ object InitLifecycle {
             Configuration.DEBUG.set(false)
             Configuration.DISABLE_CHECKS.set(true)
         }
-        LWJGLLogging.init()
-        started()
     }
 
     private fun superEarlyInit() {

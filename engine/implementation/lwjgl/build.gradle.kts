@@ -4,7 +4,6 @@ import de.dasbabypixel.gamelauncher.gradle.lwjglMain
 import java.nio.charset.Charset
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
     id("gamelauncher-lwjgl")
 }
 
@@ -56,15 +55,6 @@ dependencies {
         }
     }
     //</editor-fold>
-}
-
-kotlin {
-    jvmToolchain(24)
-}
-
-java {
-    targetCompatibility = JavaVersion.VERSION_23 // kotlin does not yet compile to jdk 24
-    disableAutoTargetJvm()
 }
 
 abstract class Template : JavaExec() {

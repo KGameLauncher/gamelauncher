@@ -4,12 +4,11 @@ import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.InitialThread
 import de.dasbabypixel.gamelauncher.lwjgl.window.LWJGLWindow
 import de.dasbabypixel.gamelauncher.lwjgl.window.WindowSystem
 
-object SDLWindowSystem : WindowSystem {
-    override fun createWindow(): LWJGLWindow {
+object SDLWindowSystem : WindowSystem() {
+    override fun createWindow0(): LWJGLWindow {
         val window = SDLWindow()
         window.create().join()
         window.renderThread.start()
-        window.renderThread.submitGR {}.join() // Wait for render thread to start
         return window
     }
 

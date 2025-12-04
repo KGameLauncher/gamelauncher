@@ -1,7 +1,7 @@
 [versions]
 android-gradle-plugin = "8.5.2"
 desugar_jdk_libs_nio = "2.1.2"
-kotlin = "2.1.20"
+kotlin = "2.2.21"
 androidx-appcompat = "1.7.0"
 slf4j = "2.0.16"
 log4j = "2.24.0"
@@ -17,6 +17,7 @@ idea-ext = "1.1.9"
 gles-docs = "0.0.8"
 
 [libraries]
+kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin-api", version.ref = "kotlin" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
 desugar_jdk_libs_nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar_jdk_libs_nio" }
 slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }

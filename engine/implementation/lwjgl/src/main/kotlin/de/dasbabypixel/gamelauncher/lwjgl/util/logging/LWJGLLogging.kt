@@ -25,6 +25,14 @@ class LWJGLLogging {
     companion object {
         val threadGroup = ThreadGroup.create("lwjgl-logging")
         fun init() {
+            Log4jConfiguration.init()
+
+            if (Debug.debug) {
+                val stream = LoggingPrintStream(getLogger<LWJGLLogging>(Markers.LWJGL), printLocation = false)
+                Configuration.DEBUG_STREAM.set(stream)
+//                if (APIUtil.DEBUG_STREAM != stream) error("Failed to inject debug logging into LWJGL")
+            }
+
             val useAnsi = Config.USE_ANSI.value
             Logger.getLogger("org.jline").level = Level.ALL
 
@@ -48,11 +56,6 @@ class LWJGLLogging {
 
             val reader = LineReaderBuilder.builder().appName("GameLauncher").terminal(terminal).build()
             Log4jConfiguration.setup(useAnsi, reader)
-
-            if (Debug.debug) {
-                val stream = LoggingPrintStream(getLogger<LWJGLLogging>(Markers.LWJGL), printLocation = false)
-                Configuration.DEBUG_STREAM.set(stream)
-            }
 
             reader.option(LineReader.Option.AUTO_GROUP, false)
             reader.option(LineReader.Option.AUTO_MENU_LIST, true)

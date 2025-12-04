@@ -3,10 +3,12 @@ package de.dasbabypixel.gamelauncher.gradle
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.getByType
 
 class GameLauncherLWJGL : Plugin<Project> {
     override fun apply(project: Project) {
+        project.apply<GameLauncherKotlinPlugin>()
         val osName = System.getProperty("os.name")!!
         val osArch = System.getProperty("os.arch")!!
 
@@ -35,7 +37,8 @@ class GameLauncherLWJGL : Plugin<Project> {
         }
 
         val versionCatalogsExtension: VersionCatalogsExtension = project.rootProject.extensions.getByType()
-        val version = versionCatalogsExtension.named("libs").findVersion("lwjgl").orElseThrow { Error("Please specify lwjgl version in gradle/libs.versions.toml") }.displayName
+        val version = versionCatalogsExtension.named("libs").findVersion("lwjgl")
+            .orElseThrow { Error("Please specify lwjgl version in gradle/libs.versions.toml") }.displayName
 
         val extension = LWJGLExtension(natives, version)
         project.extensions.add("lwjgl", extension)

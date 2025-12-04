@@ -1,6 +1,6 @@
 plugins {
     id("gamelauncher-parent")
-//    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
 //    alias(libs.plugins.launch4j) apply false
 //    alias(libs.plugins.graal.native) apply false
 //    alias(libs.plugins.kotlin.multiplatform) apply false

@@ -11,11 +11,7 @@ import de.dasbabypixel.gamelauncher.impl.provider.Providable
 import de.dasbabypixel.gamelauncher.impl.provider.provide
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.LockSupport
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 import java.lang.Thread as JThread
 import java.lang.ThreadGroup as JThreadGroup
 
@@ -140,18 +136,37 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
     @Volatile
     private var exit = false
     private var exitComplete = false
-    protected val lock = ReentrantLock()
-    protected val count = AtomicInteger(0)
-    protected val hasWork = lock.newCondition()
-    protected val hasWorkBool = AtomicBoolean(false)
-    protected open val hardFailOnException
-        get() = true
+    private val customAwaitingSystem: Boolean
+    protected val workSignal = Signal()
+    protected open val hardFailOnException = true
 
-    constructor(group: ThreadGroup) : super(group)
-    constructor(group: ThreadGroup, daemon: Boolean) : super(group, daemon)
-    constructor(group: ThreadGroup, name: String) : super(group, name)
-    constructor(group: ThreadGroup, name: String, daemon: Boolean) : super(group, name, daemon)
-    protected constructor(thread: JThread) : super(thread)
+    constructor(
+        group: ThreadGroup, customAwaitingSystem: Boolean = false
+    ) : super(group) {
+        this.customAwaitingSystem = customAwaitingSystem
+    }
+
+    constructor(
+        group: ThreadGroup, daemon: Boolean, customAwaitingSystem: Boolean = false
+    ) : super(group, daemon) {
+        this.customAwaitingSystem = customAwaitingSystem
+    }
+
+    constructor(
+        group: ThreadGroup, name: String, customAwaitingSystem: Boolean = false
+    ) : super(group, name) {
+        this.customAwaitingSystem = customAwaitingSystem
+    }
+
+    constructor(
+        group: ThreadGroup, name: String, daemon: Boolean, customAwaitingSystem: Boolean = false
+    ) : super(group, name, daemon) {
+        this.customAwaitingSystem = customAwaitingSystem
+    }
+
+    protected constructor(thread: JThread, customAwaitingSystem: Boolean) : super(thread) {
+        this.customAwaitingSystem = customAwaitingSystem
+    }
 
     final override fun run() {
         logger.debug("Starting $name")
@@ -190,53 +205,29 @@ abstract class AbstractExecutorThread : AbstractThread, ExecutorThread, StackTra
     }
 
     protected open fun preLoop() {
-        if (shouldWaitForSignal()) {
-            waitForSignal()
-        }
+        waitForSignal()
     }
 
     protected open fun postLoop() {
     }
 
+    protected open fun customSignal() = Unit
+    protected open fun customAwaitWork() = Unit
+
     protected fun signal() {
-        lock.lock()
-        try {
-            hasWorkBool.set(true)
-            if (customSignal()) return
-            hasWork.signal()
-        } finally {
-            lock.unlock()
-        }
-    }
-
-    protected open fun customSignal(): Boolean = false
-
-    protected open fun waitForSignal() {
-        if (hasWorkBool.compareAndSet(true, false)) return
-
-        val custom1 = customAwait()
-        if (!custom1) {
-            val custom = lock.withLock { awaitWork() }
-            if (custom) {
-                customAwaitWork()
-            }
+        if (customAwaitingSystem) {
+            customSignal()
         } else {
-            customAwaitWork()
+            workSignal.signal()
         }
     }
 
-    protected open fun customAwait(): Boolean = false
-
-    protected open fun awaitWork(): Boolean {
-        hasWork.await()
-        return false
-    }
-
-    protected open fun customAwaitWork() {
-    }
-
-    protected open fun shouldWaitForSignal(): Boolean {
-        return !hasWorkBool.get() // could be outdated
+    protected fun waitForSignal() {
+        if (customAwaitingSystem) {
+            customAwaitWork()
+        } else {
+            workSignal.await()
+        }
     }
 
     override fun <T> submit(callable: GameCallable<T>): CompletableFuture<T> {

@@ -6,7 +6,7 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
 class GLContextExecutor(
     group: ThreadGroup, name: String, private val context: GLContext
 ) : AbstractExecutorThread(
-    group, name
+    group, name, false
 ) {
     override fun startExecuting() {
         context.acquire()
