@@ -11,6 +11,7 @@ import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -41,6 +42,9 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     override val implName = "GLFW"
     override val id = idCounter.incrementAndGet()
     private var owned = false
+    @Volatile
+    override var isVisible: Boolean = false
+        private set
     override val frameSync = FrameSync()
     override lateinit var framebufferSize: Vec2i
 
@@ -73,7 +77,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         private set
 
     override fun changeRenderImplementation(renderImplementation: WindowRenderImplementation): CompletableFuture<Unit> {
-        return runWindow {
+        return runWindowRO {
             this.renderImplementation?.let {
                 renderThread.setRenderer(null)
                 it.disable(this, renderImplementationRenderer!!)
@@ -86,13 +90,13 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun requestFocus(): CompletableFuture<Unit> {
-        return runWindow {
+        return runWindowRO {
             glfwRequestWindowAttention(it)
         }
     }
 
     override fun forceFocus(): CompletableFuture<Unit> {
-        return runWindow {
+        return runWindowRO {
             glfwFocusWindow(it)
         }
     }
@@ -102,11 +106,11 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun title(name: String): CompletableFuture<Unit> {
-        return runWindow { glfwSetWindowTitle(it, name) }
+        return runWindowRO { glfwSetWindowTitle(it, name) }
     }
 
     override fun position(x: Int, y: Int): CompletableFuture<Unit> {
-        return runWindow { glfwSetWindowPos(it, x, y) }
+        return runWindowRO { glfwSetWindowPos(it, x, y) }
     }
 
     override fun requestCloseCallback(callback: (window: LWJGLWindow) -> Unit) {
@@ -119,8 +123,9 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
 
     override fun cleanup0(): CompletableFuture<Unit> {
         return renderThread.cleanupAsync().thenCompose {
-            runWindow {
+            runWindowW {
                 glfwDestroyWindow(it)
+                glfwId = 0L
             }.thenApplyAsync {
                 Thread.sleep(500)
             }
@@ -128,8 +133,9 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun show(): CompletableFuture<Unit> {
-        return runWindow {
+        return runWindowRO {
             glfwShowWindow(it)
+            isVisible = true
             glfwSwapBuffers(it)
         }.thenApply {
             val frame = renderThread.startNextFrame()
@@ -138,16 +144,29 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     }
 
     override fun hide(): CompletableFuture<Unit> {
-        return runWindow { glfwHideWindow(it) }
+        return runWindowRO {
+            isVisible = false
+            glfwHideWindow(it)
+        }
     }
 
     fun setTransparent(transparent: Boolean): CompletableFuture<Unit> {
-        return runWindow {
+        return runWindowRO {
             glfwSetWindowAttrib(it, GLFW_TRANSPARENT_FRAMEBUFFER, if (transparent) GLFW_TRUE else GLFW_FALSE)
         }
     }
 
-    private inline fun <T> runWindow(crossinline function: (Long) -> T): CompletableFuture<T> {
+    private inline fun <T> runWindowW(crossinline function: (Long) -> T): CompletableFuture<T> {
+        return GLFWThread.submitGC {
+            lock.write {
+                val id = glfwId
+                if (id == 0L) throw GameException("GLFW ID not initialized")
+                function(id)
+            }
+        }
+    }
+
+    private inline fun <T> runWindowRO(crossinline function: (Long) -> T): CompletableFuture<T> {
         return GLFWThread.submitGC {
             lock.read {
                 val id = glfwId

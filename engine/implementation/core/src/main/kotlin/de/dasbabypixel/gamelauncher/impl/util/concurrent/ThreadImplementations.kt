@@ -58,6 +58,12 @@ object CommonThreadHelper : ThreadsProvider {
         override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
     }
 
+    private class VirtualThreadWrapper(thread: JThread) : AbstractThread(thread) {
+        override fun run() = error("Can't run")
+
+        override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
+    }
+
     private val currentThreadLocal: ThreadLocal<Thread> = ThreadLocal.withInitial {
         val thread = JThread.currentThread()
         if (thread === initialThread) return@withInitial mappedInitialThread
@@ -65,6 +71,9 @@ object CommonThreadHelper : ThreadsProvider {
         if (thread is ForkJoinWorkerThread && thread.pool == ForkJoinPool.commonPool()) {
             // We want to support CompletableFuture async API so we want to support ForkJoinPool
             return@withInitial ForkJoinWrapper(thread)
+        }
+        if (thread.isVirtual) {
+            return@withInitial VirtualThreadWrapper(thread)
         }
 
         throw IllegalStateException("Current thread $thread is not a ThreadHolder")

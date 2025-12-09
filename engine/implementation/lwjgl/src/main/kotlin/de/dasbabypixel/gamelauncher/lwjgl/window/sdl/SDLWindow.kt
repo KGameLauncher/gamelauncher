@@ -10,11 +10,13 @@ import de.dasbabypixel.gamelauncher.api.util.function.GameFunction
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
 import de.dasbabypixel.gamelauncher.lwjgl.window.*
+import de.dasbabypixel.gamelauncher.lwjgl.window.glfw.GLFWThread
 import org.lwjgl.sdl.SDLVideo.*
 import org.lwjgl.system.MemoryStack
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.read
 import kotlin.concurrent.withLock
 
 class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
@@ -34,6 +36,9 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     private var renderImplementation: WindowRenderImplementation? = null
     private var renderImplementationRenderer: RenderImplementationRenderer? = null
     override val renderThread = SimpleRenderThread(group, this)
+    @Volatile
+    override var isVisible = false
+        private set
 
     var sdlWindowPtr: Long = 0L
         private set
@@ -159,6 +164,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     override fun show(): CompletableFuture<Unit> {
         return runWindow {
             if (!SDL_ShowWindow(it)) checkError()
+            isVisible = true
         }.thenApply {
             val frame = renderThread.startNextFrame()
             renderThread.awaitFrame(frame)
@@ -167,6 +173,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
 
     override fun hide(): CompletableFuture<Unit> {
         return runWindow {
+            isVisible = false
             if (!SDL_HideWindow(it)) checkError()
         }
     }
@@ -183,6 +190,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     override fun cleanup0(): CompletableFuture<Unit> {
         return renderThread.cleanupAsync().thenCompose {
             runWindow {
+                isVisible = false
                 SDLThreadImplementation.removeWindow(this)
                 val ptr = sdlWindowPtr
                 sdlWindowPtr = 0L

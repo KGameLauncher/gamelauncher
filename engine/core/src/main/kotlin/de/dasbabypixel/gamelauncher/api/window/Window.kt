@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture
 interface Window {
     val frameSync: FrameSync
     val renderThread: WindowRenderThread
+    val isVisible: Boolean
     fun requestFocus(): CompletableFuture<Unit>
     fun forceFocus(): CompletableFuture<Unit>
     fun show(): CompletableFuture<Unit>

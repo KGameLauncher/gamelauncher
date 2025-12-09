@@ -77,7 +77,7 @@ fun started() {
     ProvidableGL(LWJGLGLES).registerProvider("gles")
 //    GLFWThread.start()
 
-    val count = AtomicInteger(1)
+    val count = AtomicInteger(10)
     for (i in 0 until count.get()) {
         val window = WindowSystem.windowSystem.createWindow()
         var closed = false
@@ -96,15 +96,15 @@ fun started() {
         }
         window.forceFocus()
         window.frameSync.updateFramerate(0)
-        Thread.startVirtualThread {
-            while (true) {
-                println(window.frameSync.frameCount.getAndSet(0))
-                Thread.sleep(1000)
-            }
-        }
         window.changeRenderImplementation(DoubleBufferedAsyncRenderImpl())
         window.show().thenRun {
             println("shown")
+            Thread.startVirtualThread {
+                while (window.isVisible) {
+                    println(window.frameSync.frameCount.getAndSet(0))
+                    Thread.sleep(1000)
+                }
+            }
         }
     }
 }
