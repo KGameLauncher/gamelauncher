@@ -13,7 +13,7 @@ val sourceGraal = sourceSets.register("graal")
 dependencies {
     "launcherImplementation"(projects.engine)
 
-    "graalImplementation"("org.graalvm.sdk:graal-sdk:24.1.0")
+    "graalImplementation"("org.graalvm.sdk:graal-sdk:24.2.2")
 }
 
 graalvmNative {
