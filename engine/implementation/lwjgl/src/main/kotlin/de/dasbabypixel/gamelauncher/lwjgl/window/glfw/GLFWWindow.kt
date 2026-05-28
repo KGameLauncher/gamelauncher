@@ -3,15 +3,54 @@ package de.dasbabypixel.gamelauncher.lwjgl.window.glfw
 import de.dasbabypixel.gamelauncher.api.launcherHandlesException
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.Vec2i
-import de.dasbabypixel.gamelauncher.api.util.concurrent.*
+import de.dasbabypixel.gamelauncher.api.util.concurrent.Executor
+import de.dasbabypixel.gamelauncher.api.util.concurrent.FrameSync
+import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
+import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.lwjgl.window.*
-import org.lwjgl.glfw.GLFW.*
+import de.dasbabypixel.gamelauncher.lwjgl.window.LWJGLWindow
+import de.dasbabypixel.gamelauncher.lwjgl.window.LWJGLWindowImpl
+import de.dasbabypixel.gamelauncher.lwjgl.window.RenderImplementationRenderer
+import de.dasbabypixel.gamelauncher.lwjgl.window.SimpleRenderThread
+import de.dasbabypixel.gamelauncher.lwjgl.window.WindowRenderImplementation
+import org.lwjgl.glfw.GLFW.GLFW_BLUE_BITS
+import org.lwjgl.glfw.GLFW.GLFW_CLIENT_API
+import org.lwjgl.glfw.GLFW.GLFW_DONT_CARE
+import org.lwjgl.glfw.GLFW.GLFW_FALSE
+import org.lwjgl.glfw.GLFW.GLFW_FOCUS_ON_SHOW
+import org.lwjgl.glfw.GLFW.GLFW_GREEN_BITS
+import org.lwjgl.glfw.GLFW.GLFW_NO_API
+import org.lwjgl.glfw.GLFW.GLFW_RED_BITS
+import org.lwjgl.glfw.GLFW.GLFW_REFRESH_RATE
+import org.lwjgl.glfw.GLFW.GLFW_SCALE_TO_MONITOR
+import org.lwjgl.glfw.GLFW.GLFW_TRANSPARENT_FRAMEBUFFER
+import org.lwjgl.glfw.GLFW.GLFW_TRUE
+import org.lwjgl.glfw.GLFW.GLFW_VISIBLE
+import org.lwjgl.glfw.GLFW.glfwCreateWindow
+import org.lwjgl.glfw.GLFW.glfwDefaultWindowHints
+import org.lwjgl.glfw.GLFW.glfwDestroyWindow
+import org.lwjgl.glfw.GLFW.glfwFocusWindow
+import org.lwjgl.glfw.GLFW.glfwGetError
+import org.lwjgl.glfw.GLFW.glfwGetFramebufferSize
+import org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor
+import org.lwjgl.glfw.GLFW.glfwGetVideoMode
+import org.lwjgl.glfw.GLFW.glfwHideWindow
+import org.lwjgl.glfw.GLFW.glfwMakeContextCurrent
+import org.lwjgl.glfw.GLFW.glfwRequestWindowAttention
+import org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback
+import org.lwjgl.glfw.GLFW.glfwSetWindowAttrib
+import org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback
+import org.lwjgl.glfw.GLFW.glfwSetWindowPos
+import org.lwjgl.glfw.GLFW.glfwSetWindowSizeLimits
+import org.lwjgl.glfw.GLFW.glfwSetWindowTitle
+import org.lwjgl.glfw.GLFW.glfwShowWindow
+import org.lwjgl.glfw.GLFW.glfwSwapBuffers
+import org.lwjgl.glfw.GLFW.glfwWindowHint
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -19,8 +58,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 
-class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResource(), LWJGLWindowImpl,
-    LWJGLWindowImpl.RenderingInstance {
+class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResource(), LWJGLWindowImpl {
     companion object {
         private val idCounter = AtomicInteger()
         private val currentWindow = ThreadLocal<GLFWWindow>()
@@ -42,19 +80,18 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
     override val implName = "GLFW"
     override val id = idCounter.incrementAndGet()
     private var owned = false
+
     @Volatile
     override var isVisible: Boolean = false
         private set
     override val frameSync = FrameSync()
     override lateinit var framebufferSize: Vec2i
 
-    override fun startRendering(): LWJGLWindowImpl.RenderingInstance {
+    override fun startRendering() {
         creationFuture.join()
-        makeCurrent()
-        return this
     }
 
-    override fun swapBuffers(): Boolean {
+    fun swapBuffers(): Boolean {
         lock.read {
             if (glfwId == 0L) return false
             glfwSwapBuffers(glfwId)
@@ -62,8 +99,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         }
     }
 
-    override fun stopRendering() {
-        destroyCurrent()
+    fun stopRendering() {
     }
 
     private val group: ThreadGroup = ThreadGroup.create("GLFWWindow-${id}", parent?.group ?: currentThread.group)
@@ -136,7 +172,9 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
         return runWindowRO {
             glfwShowWindow(it)
             isVisible = true
-            glfwSwapBuffers(it)
+            // TODO only on GL
+
+//            swapBuffers()
         }.thenApply {
             val frame = renderThread.startNextFrame()
             renderThread.awaitFrame(frame)
@@ -220,6 +258,7 @@ class GLFWWindow internal constructor(parent: GLFWWindow?) : AbstractGameResourc
                 glfwWindowHint(GLFW_BLUE_BITS, primaryMode.blueBits())
                 glfwWindowHint(GLFW_GREEN_BITS, primaryMode.greenBits())
                 glfwWindowHint(GLFW_REFRESH_RATE, primaryMode.refreshRate())
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API)
 
                 val startWidth = primaryMode.width() / 2
                 val startHeight = primaryMode.height() / 2

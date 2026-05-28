@@ -5,14 +5,11 @@ import de.dasbabypixel.gamelauncher.api.util.Debug
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThread
 import de.dasbabypixel.gamelauncher.api.util.logging.Logging
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
-import de.dasbabypixel.gamelauncher.impl.provider.registerProvider
 import de.dasbabypixel.gamelauncher.impl.util.concurrent.ThreadGroupCache
-import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.DisruptorMPSC
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.InitialThread
-import de.dasbabypixel.gamelauncher.lwjgl.window.DoubleBufferedAsyncRenderImpl
+import de.dasbabypixel.gamelauncher.lwjgl.vulkan.VKWindowRenderer
 import de.dasbabypixel.gamelauncher.lwjgl.window.WindowSystem
-import de.dasbabypixel.gamelauncher.opengl.ProvidableGL
 import org.jline.jansi.Ansi
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -32,8 +29,7 @@ fun main() {
     }
     latch.await()
 
-    @Suppress("UnusedExpression")
-    DisruptorMPSC // Init Disruptor. This is required for our threads
+    @Suppress("UnusedExpression") DisruptorMPSC // Init Disruptor. This is required for our threads
 
     val start = Runnable {
         LWJGLGameLauncher()
@@ -74,10 +70,10 @@ fun started() {
     val logger = getLogger<Main>()
     logger.info("In IDE: {}", Debug.inIde)
 
-    ProvidableGL(LWJGLGLES).registerProvider("gles")
+//    ProvidableGL(LWJGLGLES).registerProvider("gles")
 //    GLFWThread.start()
 
-    val count = AtomicInteger(10)
+    val count = AtomicInteger(1)
     for (i in 0 until count.get()) {
         val window = WindowSystem.windowSystem.createWindow()
         var closed = false
@@ -96,7 +92,7 @@ fun started() {
         }
         window.forceFocus()
         window.frameSync.updateFramerate(0)
-        window.changeRenderImplementation(DoubleBufferedAsyncRenderImpl())
+        window.changeRenderImplementation(VKWindowRenderer)
         window.show().thenRun {
             println("shown")
             Thread.startVirtualThread {

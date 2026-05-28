@@ -2,17 +2,14 @@ package de.dasbabypixel.gamelauncher.lwjgl.window
 
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
-import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
-import de.dasbabypixel.gamelauncher.opengl.GLProvider
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class SimpleRenderThread(
     group: ThreadGroup, override val window: LWJGLWindowImpl
-) : AbstractExecutorThread(
-    group, "${window.implName}RenderThread-${window.id}", customAwaitingSystem = true
-), LWJGLRenderThread {
+) : AbstractExecutorThread(group, "${window.implName}RenderThread-${window.id}", customAwaitingSystem = true),
+    LWJGLRenderThread {
     private val frameSync = window.frameSync
     private val renderLock = ReentrantLock()
     private val framebufferLock = ReentrantLock()
@@ -20,16 +17,12 @@ class SimpleRenderThread(
     private var preparedWidth: UInt = 0u
     private var preparedHeight: UInt = 0u
     private var renderer: RenderImplementationRenderer? = null
-    private var renderingInstance: LWJGLWindowImpl.RenderingInstance? = null
-    private val gl = GLProvider.GLES
     override val started: CompletableFuture<Unit> = CompletableFuture()
 
     override fun startExecuting() {
-        renderingInstance = window.startRendering()
+        window.startRendering()
         val size = window.framebufferSize
-        LWJGLGLES.createCapabilities()
         sizeInternal(size.width, size.height)
-        gl.glClearColor(0F, 0F, 0F, 0F)
         started.complete(Unit)
     }
 
@@ -91,12 +84,8 @@ class SimpleRenderThread(
         val renderer = renderLock.withLock { renderer }
 
         renderer?.render(window, preparedWidth, preparedHeight)
-        renderingInstance!!.swapBuffers()
     }
 
     override fun stopExecuting() {
-        LWJGLGLES.unsetCapabilities()
-        renderingInstance!!.stopRendering()
-        renderingInstance = null
     }
 }

@@ -10,7 +10,6 @@ plugins {
 dependencies {
     api(projects.engine.implementation.providers)
     api(projects.engine.implementation.core)
-    api(projects.engine.implementation.opengl)
 
     api(libs.bundles.logging.runtime)
     api(libs.bundles.jline)
@@ -20,8 +19,7 @@ dependencies {
     api("org.lwjgl:lwjgl:${lwjgl.version}")
     api("org.lwjgl:lwjgl-glfw:${lwjgl.version}")
     api("org.lwjgl:lwjgl-sdl:${lwjgl.version}")
-    api("org.lwjgl:lwjgl-opengl:${lwjgl.version}")
-    api("org.lwjgl:lwjgl-opengles:${lwjgl.version}")
+    api("org.lwjgl:lwjgl-vulkan:${lwjgl.version}")
     api("org.lwjgl:lwjgl-stb:${lwjgl.version}")
 
     runtimeOnly("org.lwjgl:lwjgl:${lwjgl.version}:${lwjgl.natives}") {
@@ -67,13 +65,15 @@ abstract class Template : JavaExec() {
         jvmArgs(lwjglDefaultDevInitSystemProperties.map { "-D${it.key}=${it.value}" })
         jvmArgs("-Dgamelauncher.skipsysprops=true")
         val charset = Charset.defaultCharset()
-        jvmArgs(
-            "-Dstdout.encoding=${charset.name()}", "-Dstderr.encoding=${charset.name()}"
-        )
+        jvmArgs("-Dstdout.encoding=${charset.name()}", "-Dstderr.encoding=${charset.name()}")
         standardInput = System.`in`
         standardOutput = System.out
         errorOutput = System.err
     }
+}
+
+kotlin {
+    
 }
 
 tasks {

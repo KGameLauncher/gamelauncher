@@ -4,8 +4,13 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.ExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.lwjgl.util.concurrent.InitialThread
 import de.dasbabypixel.gamelauncher.lwjgl.window.WrappingExecutorThread
-import org.lwjgl.glfw.GLFW.*
+import org.lwjgl.glfw.GLFW.glfwInit
+import org.lwjgl.glfw.GLFW.glfwPostEmptyEvent
+import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
+import org.lwjgl.glfw.GLFW.glfwTerminate
+import org.lwjgl.glfw.GLFW.glfwWaitEvents
 import org.lwjgl.glfw.GLFWErrorCallback
+import org.lwjgl.glfw.GLFWVulkan
 import org.lwjgl.system.APIUtil
 
 object GLFWThread : WrappingExecutorThread {
@@ -17,9 +22,8 @@ object GLFWThreadImplementation : InitialThread.Implementation {
 
     @OptIn(ExperimentalStdlibApi::class)
     private val errorCallback = object : GLFWErrorCallback() {
-        private val ERROR_CODES = APIUtil.apiClassTokens(
-            { _, value -> value in 0x10001..0x1ffff }, null, org.lwjgl.glfw.GLFW::class.java
-        )
+        private val ERROR_CODES =
+            APIUtil.apiClassTokens({ _, value -> value in 0x10001..0x1ffff }, null, org.lwjgl.glfw.GLFW::class.java)
 
         override fun invoke(errorCode: Int, descriptionId: Long) {
             val description = getDescription(descriptionId)
@@ -46,8 +50,11 @@ object GLFWThreadImplementation : InitialThread.Implementation {
             throw IllegalStateException("Failed to initialize GLFW")
         }
         initialized = true
-        @Suppress("UnusedExpression")
-        GLFWMonitors // CL-Init GLFWMonitors
+        @Suppress("UnusedExpression") GLFWMonitors // CL-Init GLFWMonitors
+
+        if (GLFWVulkan.glfwVulkanSupported()) {
+            
+        }
     }
 
     override fun workExecution() {

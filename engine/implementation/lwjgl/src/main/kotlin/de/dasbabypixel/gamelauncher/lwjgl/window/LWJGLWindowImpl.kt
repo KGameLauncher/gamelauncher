@@ -3,13 +3,9 @@ package de.dasbabypixel.gamelauncher.lwjgl.window
 interface LWJGLWindowImpl : LWJGLWindow {
     val implName: String
     val id: Int
-    fun startRendering(): RenderingInstance
 
-    interface RenderingInstance {
-        /**
-         * Swaps the framebuffers. This will return false if the window has been destroyed
-         */
-        fun swapBuffers(): Boolean
-        fun stopRendering()
-    }
+    /**
+     * Called by the render thread when rendering begins. Can be used by the window implementation to do work on the render thread before the rendering begins
+     */
+    fun startRendering()
 }

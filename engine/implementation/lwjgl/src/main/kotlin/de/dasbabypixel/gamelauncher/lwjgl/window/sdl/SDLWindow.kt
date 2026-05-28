@@ -5,18 +5,32 @@ import de.dasbabypixel.gamelauncher.api.launcherHandlesException
 import de.dasbabypixel.gamelauncher.api.util.Vec2i
 import de.dasbabypixel.gamelauncher.api.util.concurrent.FrameSync
 import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadGroup
-import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.api.util.function.GameFunction
 import de.dasbabypixel.gamelauncher.api.util.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.lwjgl.opengl.LWJGLGLES
-import de.dasbabypixel.gamelauncher.lwjgl.window.*
-import de.dasbabypixel.gamelauncher.lwjgl.window.glfw.GLFWThread
-import org.lwjgl.sdl.SDLVideo.*
+import de.dasbabypixel.gamelauncher.lwjgl.window.LWJGLWindow
+import de.dasbabypixel.gamelauncher.lwjgl.window.LWJGLWindowImpl
+import de.dasbabypixel.gamelauncher.lwjgl.window.RenderImplementationRenderer
+import de.dasbabypixel.gamelauncher.lwjgl.window.SimpleRenderThread
+import de.dasbabypixel.gamelauncher.lwjgl.window.WindowRenderImplementation
+import org.lwjgl.sdl.SDLVideo.SDL_CreateWindow
+import org.lwjgl.sdl.SDLVideo.SDL_DestroyWindow
+import org.lwjgl.sdl.SDLVideo.SDL_FLASH_UNTIL_FOCUSED
+import org.lwjgl.sdl.SDLVideo.SDL_FlashWindow
+import org.lwjgl.sdl.SDLVideo.SDL_GetWindowID
+import org.lwjgl.sdl.SDLVideo.SDL_GetWindowSizeInPixels
+import org.lwjgl.sdl.SDLVideo.SDL_HideWindow
+import org.lwjgl.sdl.SDLVideo.SDL_RaiseWindow
+import org.lwjgl.sdl.SDLVideo.SDL_SetWindowPosition
+import org.lwjgl.sdl.SDLVideo.SDL_SetWindowTitle
+import org.lwjgl.sdl.SDLVideo.SDL_ShowWindow
+import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_HIDDEN
+import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_OPENGL
+import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_RESIZABLE
+import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_TRANSPARENT
 import org.lwjgl.system.MemoryStack
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.read
 import kotlin.concurrent.withLock
 
 class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
@@ -27,6 +41,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     override val frameSync: FrameSync = FrameSync()
     override val implName: String = "SDL"
     override val id = idCounter.incrementAndGet()
+
     override lateinit var framebufferSize: Vec2i
     override val creationFuture = CompletableFuture<Unit>()
     private val lock = ReentrantLock()
@@ -36,6 +51,7 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
     private var renderImplementation: WindowRenderImplementation? = null
     private var renderImplementationRenderer: RenderImplementationRenderer? = null
     override val renderThread = SimpleRenderThread(group, this)
+
     @Volatile
     override var isVisible = false
         private set
@@ -52,7 +68,6 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
 
     fun handleFramebufferUpdate(w: Int, h: Int) {
         framebufferSize = Vec2i(w, h)
-        println("update $w $h")
         renderThread.framebufferUpdate(w, h)
         framebufferSizeCallback?.invoke(this, w, h)
     }
@@ -84,12 +99,10 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
 
     internal fun create(): CompletableFuture<Unit> {
         return SDLThread.submitGR {
-            val window = SDL_CreateWindow(
-                Config.NAME.value,
+            val window = SDL_CreateWindow(Config.NAME.value,
                 600,
                 600,
-                SDL_WINDOW_RESIZABLE or SDL_WINDOW_HIDDEN or SDL_WINDOW_TRANSPARENT or SDL_WINDOW_OPENGL
-            )
+                SDL_WINDOW_RESIZABLE or SDL_WINDOW_HIDDEN or SDL_WINDOW_TRANSPARENT or SDL_WINDOW_OPENGL)
             if (window == 0L) checkError()
             sdlWindowPtr = window
             sdlWindowId = SDL_GetWindowID(sdlWindowPtr)
@@ -117,41 +130,45 @@ class SDLWindow : AbstractGameResource(), LWJGLWindowImpl {
 
     private fun validWindow(): Boolean = sdlWindowPtr != 0L
 
-    override fun startRendering(): LWJGLWindowImpl.RenderingInstance {
-        return object : LWJGLWindowImpl.RenderingInstance {
-            val ctx: Long = runWindow {
-                val ctx = SDL_GL_CreateContext(sdlWindowPtr)
-                if (ctx == 0L) checkError()
-                LWJGLGLES.createCapabilities()
-                LWJGLGLES.unsetCapabilities()
-                if (!SDL_GL_MakeCurrent(sdlWindowPtr, 0L)) checkError()
-                ctx
-            }.join()
-
-            init {
-                if (!SDL_GL_MakeCurrent(sdlWindowPtr, ctx)) checkError()
-                println("current int ${currentThread.name}")
-            }
-
-            override fun swapBuffers(): Boolean {
-                return lock.withLock {
-                    if (!validWindow()) {
-                        false
-                    } else {
-                        if (!SDL_GL_SwapWindow(sdlWindowPtr)) checkError()
-                        true
-                    }
-                }
-            }
-
-            override fun stopRendering() {
-                if (!SDL_GL_MakeCurrent(sdlWindowPtr, 0L)) checkError()
-                runWindow {
-                    if (!SDL_GL_DestroyContext(ctx)) checkError()
-                }.join()
-            }
-        }
+    override fun startRendering() {
+        runWindow {}.join()
     }
+
+//    override fun startRendering(): LWJGLWindowImpl.RenderingInstance {
+//        return object : LWJGLWindowImpl.RenderingInstance {
+//            val ctx: Long = runWindow {
+//                val ctx = SDL_GL_CreateContext(sdlWindowPtr)
+//                if (ctx == 0L) checkError()
+//                LWJGLGLES.createCapabilities()
+//                LWJGLGLES.unsetCapabilities()
+//                if (!SDL_GL_MakeCurrent(sdlWindowPtr, 0L)) checkError()
+//                ctx
+//            }.join()
+//
+//            init {
+//                if (!SDL_GL_MakeCurrent(sdlWindowPtr, ctx)) checkError()
+//                println("current int ${currentThread.name}")
+//            }
+//
+//            override fun swapBuffers(): Boolean {
+//                return lock.withLock {
+//                    if (!validWindow()) {
+//                        false
+//                    } else {
+//                        if (!SDL_GL_SwapWindow(sdlWindowPtr)) checkError()
+//                        true
+//                    }
+//                }
+//            }
+//
+//            override fun stopRendering() {
+//                if (!SDL_GL_MakeCurrent(sdlWindowPtr, 0L)) checkError()
+//                runWindow {
+//                    if (!SDL_GL_DestroyContext(ctx)) checkError()
+//                }.join()
+//            }
+//        }
+//    }
 
     override fun framebufferSizeCallback(callback: (window: LWJGLWindow, width: Int, height: Int) -> Unit) {
         framebufferSizeCallback = callback

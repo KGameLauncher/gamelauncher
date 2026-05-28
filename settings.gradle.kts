@@ -33,6 +33,7 @@ include("engine:core")
 include("engine:implementation:core")
 include("engine:implementation:providers")
 include("engine:implementation:opengl")
+include("engine:implementation:vulkan")
 include("engine:implementation:lwjgl")
 //include("executables")
 
