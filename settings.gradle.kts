@@ -35,6 +35,7 @@ include("engine:implementation:providers")
 include("engine:implementation:opengl")
 include("engine:implementation:vulkan")
 include("engine:implementation:lwjgl")
+include("multi")
 //include("executables")
 
 val ideaVendor: String? = System.getProperty("idea.vendor.name")
