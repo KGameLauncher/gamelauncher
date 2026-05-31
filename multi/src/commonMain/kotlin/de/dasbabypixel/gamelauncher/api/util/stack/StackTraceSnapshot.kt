@@ -20,8 +20,9 @@ class StackTraceSnapshot(
         }
 
         private fun cause(thread: Thread): StackTraceSnapshot? {
-            if (thread is CauseContainer) {
-                return thread.cause
+            val task = thread.task
+            if (task is CauseContainer) {
+                return task.cause
             }
             return null
         }

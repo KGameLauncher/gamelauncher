@@ -1,9 +1,13 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
-expect class Signal {
-    constructor()
-
+interface Signal {
     fun await()
 
     fun signal()
+
+    companion object {
+        operator fun invoke(): Signal = createSignal()
+    }
 }
+
+internal expect fun Signal.Companion.createSignal(): Signal

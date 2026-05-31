@@ -5,10 +5,14 @@ plugins {
 
 repositories {
     gradlePluginPortal()
+    mavenCentral()
+    google()
 }
 
 dependencies {
     compileOnly(libs.kotlin.gradle.plugin)
+    compileOnly("com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin:9.2.1")
+//    compileOnly(libs.plugins.kotlin.multiplatform)
 }
 
 gradlePlugin {

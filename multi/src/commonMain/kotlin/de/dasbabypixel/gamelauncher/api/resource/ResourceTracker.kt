@@ -2,11 +2,12 @@ package de.dasbabypixel.gamelauncher.api.resource
 
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.concurrentSet
+import de.dasbabypixel.gamelauncher.api.util.debug.Debug
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 
-class ResourceTracker(val enabled: Boolean) {
+class ResourceTracker(val enabled: Boolean = Debug.trackResources) {
     private val resources = concurrentSet<GameResource>()
-    private val logger = getLogger<ResourceTracker>()
+    private val logger by lazy { getLogger<ResourceTracker>() }
 
     fun startTrackingResource(resource: GameResource) {
         if (!enabled) return
@@ -38,6 +39,10 @@ class ResourceTracker(val enabled: Boolean) {
                 logger.error("Memory Leak: {}", resource)
             }
         }
+    }
+
+    companion object {
+        val global: ResourceTracker = ResourceTracker()
     }
 }
 

@@ -40,7 +40,8 @@ include("multi")
 
 val ideaVendor: String? = System.getProperty("idea.vendor.name")
 val isAndroid = ideaVendor != "JetBrains" || file("include.android").exists()
+gradle.extra["isAndroid"] = isAndroid
 logger.info("Running on Android: $isAndroid")
 if (isAndroid) { // Optimize build times: don't include android in normal IntelliJ
-    include("engine:implementation:android")
+    // include("engine:implementation:android")
 }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><Configuration>
+    <Appenders>
+        <TerminalConsole name="ROOT">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%highlight{%p{length=1}}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%style{]}{#646464} %style{[}{#646464}%style{%c{1.}}{#0064FF}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464}: %highlight{%m}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="false"/>
+        </TerminalConsole>
+        <File name="ROOTFile" fileName="latest.log">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%highlight{%p{length=1}}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%style{]}{#646464} %style{[}{#646464}%style{%c{1.}}{#0064FF}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464}: %highlight{%m}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="true"/>
+        </File>
+        <TerminalConsole name="stdout">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%style{STDOUT}{#AAAAAA}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464} %style{[}{#646464}%style{%location}{#969696}%style{]}{#646464} %style{%m}{#AAAAAA}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="false"/>
+        </TerminalConsole>
+        <File name="stdoutFile" fileName="latest.log">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%style{STDOUT}{#AAAAAA}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464} %style{[}{#646464}%style{%location}{#969696}%style{]}{#646464} %style{%m}{#AAAAAA}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="true"/>
+        </File>
+        <TerminalConsole name="stderr">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%style{STDERR}{#B40000}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464} %style{[}{#646464}%style{%location}{#969696}%style{]}{#646464} %style{%m}{#B40000}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="false"/>
+        </TerminalConsole>
+        <File name="stderrFile" fileName="latest.log">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%style{STDERR}{#B40000}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464} %style{[}{#646464}%style{%location}{#969696}%style{]}{#646464} %style{%m}{#B40000}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="true"/>
+        </File>
+        <TerminalConsole name="MarkerFixedLWJGL">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%highlight{%p{length=1}}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%style{]}{#646464} %style{[}{#646464}%style{%marker}{#0064FF}%style{]}{#646464} %style{[}{#646464}%style{%c{1.}}{#0064FF}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464}: %highlight{%m}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="false"/>
+        </TerminalConsole>
+        <File name="MarkerFixedLWJGLFile" fileName="latest.log">
+            <PatternLayout pattern="%style{[}{#646464}%style{%d{ABSOLUTE}}{#46FF46}%style{]}{#646464} %style{[}{#646464}%highlight{%p{length=1}}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%style{]}{#646464} %style{[}{#646464}%style{%marker}{#0064FF}%style{]}{#646464} %style{[}{#646464}%style{%c{1.}}{#0064FF}%style{]}{#646464} %style{[}{#646464}%style{%t}{#C8C8C8}%style{]}{#646464}: %highlight{%m}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}%n%highlight{%ex}{TRACE=#FF00FF, ALL=#D800D8, PRINT_STREAM=#D800D8, ERROR=#960000, INFO=#EADAE4, FATAL=#640000, DEBUG=#969696, OFF=#D800D8, WARN=#FFFF00}" alwaysWriteExceptions="false" disableAnsi="true"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <AsyncRoot level="ALL">
+            <AppenderRef ref="ROOT">
+                <Filters>
+                    <MarkerFilter onMatch="DENY" onMismatch="NEUTRAL" marker="MarkerFixedLWJGL"/>
+                </Filters>
+            </AppenderRef>
+            <AppenderRef ref="ROOTFile">
+                <Filters>
+                    <MarkerFilter onMatch="DENY" onMismatch="NEUTRAL" marker="MarkerFixedLWJGL"/>
+                </Filters>
+            </AppenderRef>
+            <AppenderRef ref="MarkerFixedLWJGL">
+                <MarkerFilter onMatch="ACCEPT" onMismatch="DENY" marker="MarkerFixedLWJGL"/>
+            </AppenderRef>
+            <AppenderRef ref="MarkerFixedLWJGLFile">
+                <MarkerFilter onMatch="ACCEPT" onMismatch="DENY" marker="MarkerFixedLWJGL"/>
+            </AppenderRef>
+        </AsyncRoot>
+        <AsyncLogger name="stdout" level="ALL" includeLocation="true" additivity="false">
+            <AppenderRef ref="stdout"/>
+            <AppenderRef ref="stdoutFile"/>
+        </AsyncLogger>
+        <AsyncLogger name="stderr" level="ALL" includeLocation="true" additivity="false">
+            <AppenderRef ref="stderr"/>
+            <AppenderRef ref="stderrFile"/>
+        </AsyncLogger>
+    </Loggers>
+</Configuration>

@@ -12,7 +12,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 @OptIn(ExperimentalAtomicApi::class)
 abstract class AbstractGameResource : GameResource.StackCapable {
     companion object {
-        private val logger = getLogger<AbstractGameResource>()
+        private val logger by lazy { getLogger<AbstractGameResource>() }
     }
 
     final override var creationStack: StackTrace? = null
@@ -46,8 +46,9 @@ abstract class AbstractGameResource : GameResource.StackCapable {
     }
 
     protected fun track(thread: Thread = currentThread) {
-        if (!created.compareAndSet(expectedValue = false,
-                newValue = true)
+        if (!created.compareAndSet(
+                expectedValue = false, newValue = true
+            )
         ) throw IllegalStateException("Already tracked")
         creationThreadName = thread.name
         creationStack = thread.stacktrace

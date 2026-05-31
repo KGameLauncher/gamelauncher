@@ -6,6 +6,8 @@ class Providers {
     private val map = HashMap<KClass<*>, ClassEntry<*>>()
     private var frozen = false
 
+    inline fun <reified T: Providable> provide(): T = provide(T::class)
+
     fun <T : Providable> provide(cls: KClass<in T>): T {
         return providers(cls).single()
     }
@@ -38,14 +40,6 @@ class Providers {
 interface Providable
 
 class ProviderNotRegisteredException(msg: String) : RuntimeException(msg)
-
-inline fun <reified T : Providable> Providers.provide(): T {
-    return T::class.provide(this)
-}
-
-inline fun <reified T : Providable> Providers.provide(name: String): T {
-    return T::class.provide(this, name)
-}
 
 inline fun <reified T : Providable> KClass<T>.provide(providers: Providers, name: String): T {
     return providers.provide(this, name)

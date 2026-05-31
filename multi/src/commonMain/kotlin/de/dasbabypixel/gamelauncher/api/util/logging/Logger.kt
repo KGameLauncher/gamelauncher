@@ -1,6 +1,8 @@
 package de.dasbabypixel.gamelauncher.api.util.logging
 
-expect interface Logger {
+interface Logger {
+    val name: String
+
     fun debug(msg: String)
     fun debug(format: String, arg: Any?)
     fun debug(format: String, arg1: Any?, arg2: Any?)

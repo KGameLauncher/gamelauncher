@@ -12,7 +12,7 @@ class GameLauncherParent : Plugin<Project> {
 val javaVersionLatest = 24
 val languageVersionLatest = JavaLanguageVersion.of(javaVersionLatest)
 val launcherGroup = "launcher"
-val lwjglMain = "de.dasbabypixel.gamelauncher.lwjgl.MainKt"
+val lwjglMain = "de.dasbabypixel.gamelauncher.impl.MainKt"
 val lwjglLauncherMain = "de.dasbabypixel.gamelauncher.lwjgl.launcher.MainKt"
 val lwjglDefaultProdInitSystemProperties = mapOf("jdk.console" to "java.base")
 val lwjglDefaultDevInitSystemProperties = lwjglDefaultProdInitSystemProperties + mapOf("gamelauncher.in_ide" to "true")

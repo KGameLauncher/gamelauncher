@@ -1,19 +1,18 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
 import de.dasbabypixel.gamelauncher.impl.Providable
-import de.dasbabypixel.gamelauncher.impl.provide
 
 interface EfficientMPSC : Providable {
     fun <T : Any> create(instanceCreator: Function0<T>, size: Int): MPSC<T>
 }
 
 object EfficientMPSCs {
-    private val instance = provide<EfficientMPSC>()
-
     fun <T : Any> create(instanceCreator: Function0<T>, size: Int): MPSC<T> {
         return instance.create(instanceCreator, size)
     }
 }
+
+internal expect val EfficientMPSCs.instance: EfficientMPSC
 
 interface MPSC<T : Any> {
     fun <A, B, C> createPublisher(threeArgs: ThreeArgs<T, A, B, C>): PublisherThreeArgs<A, B, C>
