@@ -6,6 +6,7 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.concurrentHashMap
 object Config {
     private val config: ConcurrentMap<String, ConfigValue<out Any>> = concurrentHashMap()
 
+    val release = createBoolean("release", false)
     val name = createString("name", "GameLauncher")
     val inIDE = createBoolean("in_ide", false)
     val debug = createBoolean("debug", inIDE)
@@ -57,16 +58,9 @@ object Config {
         return c
     }
 
-    class ConfigValue<T>(val name: String, val defaultValue: T, value: T) {
-        var value: T = value
-            private set
-
+    class ConfigValue<T>(val name: String, val defaultValue: T, val value: T) {
         init {
             if (name.lowercase() != name) throw IllegalArgumentException("Name must be namespaced lowercase")
-        }
-
-        fun reset() {
-            value = defaultValue
         }
 
         operator fun invoke(): T = value

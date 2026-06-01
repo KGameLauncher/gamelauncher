@@ -1,4 +1,4 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.slf4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j
 
 import org.slf4j.Marker
 

@@ -1,8 +1,7 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.slf4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j
 
 import de.dasbabypixel.gamelauncher.api.util.logging.Marker
-import de.dasbabypixel.gamelauncher.api.util.logging.log4j.LWJGLLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.log4j.Log4jConfiguration
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.LWJGLLogging
 import org.slf4j.Logger
 
 class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging.Logger {
@@ -26,7 +25,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     }
 
     override fun debug(format: String, vararg arguments: Any?) {
-        l.debug(format, arguments)
+        l.debug(format, *arguments)
     }
 
     override fun debug(msg: String, t: Throwable) {
@@ -54,7 +53,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     override fun debug(
         marker: Marker, format: String, vararg arguments: Any?
     ) {
-        l.debug((marker as SLF4JMarker).m, format, arguments)
+        l.debug((marker as SLF4JMarker).m, format, *arguments)
     }
 
     override fun debug(
@@ -76,7 +75,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     }
 
     override fun info(format: String, vararg arguments: Any?) {
-        l.info(format, arguments)
+        l.info(format, *arguments)
     }
 
     override fun info(msg: String, t: Throwable) {
@@ -104,7 +103,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     override fun info(
         marker: Marker, format: String, vararg arguments: Any?
     ) {
-        l.info((marker as SLF4JMarker).m, format, arguments)
+        l.info((marker as SLF4JMarker).m, format, *arguments)
     }
 
     override fun info(
@@ -126,7 +125,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     }
 
     override fun warn(format: String, vararg arguments: Any?) {
-        l.warn(format, arguments)
+        l.warn(format, *arguments)
     }
 
     override fun warn(msg: String, t: Throwable) {
@@ -154,7 +153,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     override fun warn(
         marker: Marker, format: String, vararg arguments: Any?
     ) {
-        l.warn((marker as SLF4JMarker).m, format, arguments)
+        l.warn((marker as SLF4JMarker).m, format, *arguments)
     }
 
     override fun warn(
@@ -176,7 +175,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     }
 
     override fun error(format: String, vararg arguments: Any?) {
-        l.error(format, arguments)
+        l.error(format, *arguments)
     }
 
     override fun error(msg: String, t: Throwable) {
@@ -204,7 +203,7 @@ class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging
     override fun error(
         marker: Marker, format: String, vararg arguments: Any?
     ) {
-        l.error((marker as SLF4JMarker).m, format, arguments)
+        l.error((marker as SLF4JMarker).m, format, *arguments)
     }
 
     override fun error(

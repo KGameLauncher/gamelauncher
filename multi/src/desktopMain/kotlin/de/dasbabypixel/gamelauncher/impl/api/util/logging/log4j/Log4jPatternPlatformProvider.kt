@@ -1,4 +1,4 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.log4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPattern
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_GRAY

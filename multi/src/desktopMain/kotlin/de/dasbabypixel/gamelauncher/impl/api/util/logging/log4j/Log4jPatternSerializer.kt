@@ -1,4 +1,4 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.log4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_DEBUG
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_ERROR
@@ -8,9 +8,9 @@ import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_TRACE
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_UNKNOWN
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_WARN
 import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.LogUse
 import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult
 import de.dasbabypixel.gamelauncher.api.util.logging.PatternException
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.LogUse
 
 object Log4jPatternSerializer {
     private val serializers = HashMap<String, Serializer>()

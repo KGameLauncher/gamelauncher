@@ -1,6 +1,10 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.log4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import org.apache.logging.log4j.core.*
+import org.apache.logging.log4j.core.Appender
+import org.apache.logging.log4j.core.Core
+import org.apache.logging.log4j.core.Filter
+import org.apache.logging.log4j.core.Layout
+import org.apache.logging.log4j.core.LogEvent
 import org.apache.logging.log4j.core.appender.AbstractAppender
 import org.apache.logging.log4j.core.config.Property
 import org.apache.logging.log4j.core.config.plugins.Plugin
@@ -9,12 +13,10 @@ import org.apache.logging.log4j.core.impl.LocationAware
 import org.jline.reader.LineReader
 import java.io.Serializable
 
-@Plugin(
-    name = TerminalConsoleAppender.NAME,
+@Plugin(name = TerminalConsoleAppender.NAME,
     category = Core.CATEGORY_NAME,
     elementType = Appender.ELEMENT_TYPE,
-    printObject = true
-)
+    printObject = true)
 class TerminalConsoleAppender(
     name: String,
     filter: Filter?,
@@ -35,9 +37,12 @@ class TerminalConsoleAppender(
     class Builder<B : Builder<B>?> : AbstractAppender.Builder<B>(),
         org.apache.logging.log4j.core.util.Builder<TerminalConsoleAppender?> {
         override fun build(): TerminalConsoleAppender {
-            return TerminalConsoleAppender(
-                name, filter, getOrCreateLayout(), isIgnoreExceptions, propertyArray, lineReader!!
-            )
+            return TerminalConsoleAppender(name,
+                filter,
+                getOrCreateLayout(),
+                isIgnoreExceptions,
+                propertyArray,
+                lineReader!!)
         }
 
         override fun getErrorPrefix(): String = super<AbstractAppender.Builder>.getErrorPrefix()

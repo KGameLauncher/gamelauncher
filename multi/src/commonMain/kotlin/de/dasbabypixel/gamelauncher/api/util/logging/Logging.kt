@@ -7,6 +7,10 @@ inline fun <reified T : Any> getLogger(): Logger = getLogger(T::class)
 inline fun <reified T : Any> getLogger(marker: String): Logger =
     getLogger<T>().withDefaultMarker(marker)
 
+inline fun <reified T : Any> T.getLogger() = getLogger(T::class)
+inline fun <reified T : Any> T.getLogger(marker: String) =
+    getLogger(T::class).withDefaultMarker(marker)
+
 fun Logger.withDefaultMarker(marker: String) = withDefaultMarker(getMarker(marker))
 
 expect fun <T : Any> getLogger(cls: KClass<T>): Logger

@@ -7,6 +7,8 @@ import java.nio.charset.Charset
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     id("com.android.kotlin.multiplatform.library")
+    alias(libs.plugins.shadow)
+    id("gamelauncher-lwjgl")
 }
 
 kotlin {
@@ -38,6 +40,46 @@ kotlin {
                 api(libs.bundles.logging)
                 api(libs.bundles.logging.runtime)
                 api(libs.bundles.jline)
+                api(libs.kotlin.reflect)
+
+                //<editor-fold desc="api(LWJGL)...">
+                api("org.lwjgl:lwjgl:${lwjgl.version}")
+                api("org.lwjgl:lwjgl-glfw:${lwjgl.version}")
+                api("org.lwjgl:lwjgl-sdl:${lwjgl.version}")
+                api("org.lwjgl:lwjgl-vulkan:${lwjgl.version}")
+                api("org.lwjgl:lwjgl-stb:${lwjgl.version}")
+
+                runtimeOnly("org.lwjgl:lwjgl:${lwjgl.version}:${lwjgl.natives}") {
+                    this.artifact {
+                        this.classifier = lwjgl.natives
+                    }
+                }
+                runtimeOnly("org.lwjgl:lwjgl-glfw:${lwjgl.version}:${lwjgl.natives}") {
+                    this.artifact {
+                        this.classifier = lwjgl.natives
+                    }
+                }
+                runtimeOnly("org.lwjgl:lwjgl-sdl:${lwjgl.version}:${lwjgl.natives}") {
+                    this.artifact {
+                        this.classifier = lwjgl.natives
+                    }
+                }
+                runtimeOnly("org.lwjgl:lwjgl-opengl:${lwjgl.version}:${lwjgl.natives}") {
+                    this.artifact {
+                        this.classifier = lwjgl.natives
+                    }
+                }
+                runtimeOnly("org.lwjgl:lwjgl-opengles:${lwjgl.version}:${lwjgl.natives}") {
+                    this.artifact {
+                        this.classifier = lwjgl.natives
+                    }
+                }
+                runtimeOnly("org.lwjgl:lwjgl-stb:${lwjgl.version}:${lwjgl.natives}") {
+                    this.artifact {
+                        this.classifier = lwjgl.natives
+                    }
+                }
+                //</editor-fold>
             }
         }
         val androidMain by getting {
@@ -65,10 +107,15 @@ abstract class Template : JavaExec() {
 }
 
 tasks {
-    register<Template>("lwjglRun")
     listOf("sdl", "glfw").map { it.uppercase() }.forEach { windowSystem ->
-        register<Template>("lwjglRun$windowSystem") {
+        register<Template>("desktopRun$windowSystem") {
+            group = "run"
             jvmArgs("-Dgamelauncher.window_system=${windowSystem.lowercase()}")
         }
+    }
+    named<Jar>("shadowJar") {
+        this.manifest.attributes(mapOf("Main-Class" to "de.dasbabypixel.gamelauncher.impl.MainKt"))
+        this.manifest.attributes(mapOf("Test" to "abc"))
+        this.manifest.attributes(mapOf("Enable-Native-Access" to "ALL-UNNAMED"))
     }
 }

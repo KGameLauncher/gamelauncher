@@ -4,6 +4,7 @@ import de.dasbabypixel.gamelauncher.gradle.lwjglMain
 import java.nio.charset.Charset
 
 plugins {
+    id("gamelauncher-kotlin")
     id("gamelauncher-lwjgl")
 }
 
@@ -73,7 +74,7 @@ abstract class Template : JavaExec() {
 }
 
 kotlin {
-    
+
 }
 
 tasks {

@@ -1,15 +1,15 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.log4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
 import de.dasbabypixel.gamelauncher.api.util.Color
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns
 import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
 import de.dasbabypixel.gamelauncher.api.util.logging.LogLevelRegistry
 import de.dasbabypixel.gamelauncher.api.util.logging.LogType
-import de.dasbabypixel.gamelauncher.api.util.logging.LogUse
 import de.dasbabypixel.gamelauncher.api.util.logging.LoggingPrintStream
 import de.dasbabypixel.gamelauncher.api.util.logging.PatternParser
-import de.dasbabypixel.gamelauncher.api.util.logging.slf4j.SLF4JLogger
 import de.dasbabypixel.gamelauncher.api.util.logging.styleHex
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.LogUse
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j.SLF4JLogger
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.Appender
 import org.apache.logging.log4j.core.Core
@@ -21,7 +21,6 @@ import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFact
 import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder
 import org.apache.logging.log4j.core.config.builder.api.LoggableComponentBuilder
 import org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration
 import org.apache.logging.log4j.core.config.plugins.processor.PluginEntry
 import org.apache.logging.log4j.core.config.plugins.util.PluginRegistry
 import org.apache.logging.log4j.core.config.plugins.util.PluginType
@@ -99,6 +98,7 @@ object Log4jConfiguration {
         val builder = ConfigurationBuilderFactory.newConfigurationBuilder()
 
         val logTypeList = LogLevelRegistry.levels()
+        Level.values()
         val logger = builder.newRootLogger(Level.ALL, true)
         val stdout = builder.newLogger("stdout", Level.ALL, true).configureOut()
         val stderr = builder.newLogger("stderr", Level.ALL, true).configureOut()
@@ -234,7 +234,7 @@ object Log4jConfiguration {
     fun setup(useAnsi: Boolean, lineReader: LineReader) {
         LWJGLPatternProvider.register()
         LWJGLLogLevels.register()
-        val configuration = createConfiguration(useAnsi, lineReader) as BuiltConfiguration
+        val configuration = createConfiguration(useAnsi, lineReader)
         Configurator.reconfigure(configuration)
         JvmLogging.init()
         System.setOut(LoggingPrintStream(SLF4JLogger(LoggerFactory.getLogger("stdout"))))

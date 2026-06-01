@@ -1,4 +1,5 @@
 plugins {
+    id("gamelauncher-kotlin")
     id("gamelauncher-lwjgl")
 }
 

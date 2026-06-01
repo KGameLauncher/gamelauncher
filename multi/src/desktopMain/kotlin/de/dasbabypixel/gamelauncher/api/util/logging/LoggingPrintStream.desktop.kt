@@ -1,8 +1,8 @@
 package de.dasbabypixel.gamelauncher.api.util.logging
 
-import de.dasbabypixel.gamelauncher.api.util.logging.log4j.Log4jLevels
-import de.dasbabypixel.gamelauncher.api.util.logging.slf4j.MarkerLogger
-import de.dasbabypixel.gamelauncher.api.util.logging.slf4j.SLF4JLogger
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.Log4jLevels
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j.MarkerLogger
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j.SLF4JLogger
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.MarkerManager
 import java.io.OutputStream

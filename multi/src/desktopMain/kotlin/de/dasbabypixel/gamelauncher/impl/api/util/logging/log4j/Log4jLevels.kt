@@ -1,4 +1,4 @@
-package de.dasbabypixel.gamelauncher.api.util.logging.log4j
+package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
 import org.apache.logging.log4j.Level
 

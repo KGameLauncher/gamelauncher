@@ -3,21 +3,19 @@ package de.dasbabypixel.gamelauncher.gradle
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.getByType
 
 class GameLauncherLWJGL : Plugin<Project> {
     override fun apply(project: Project) {
-        project.apply<GameLauncherKotlinPlugin>()
+//        project.apply<GameLauncherKotlinPlugin>()
         val osName = System.getProperty("os.name")!!
         val osArch = System.getProperty("os.arch")!!
 
         val natives = when {
             "FreeBSD" == osName -> "natives-freebsd"
             arrayOf("Linux", "SunOS", "Unit").any { osName.startsWith(it) } -> {
-                if (arrayOf(
-                        "arm", "aarch64"
-                    ).any { osArch.startsWith(it) }
+                if (arrayOf("arm",
+                        "aarch64").any { osArch.startsWith(it) }
                 ) "natives-linux${if (osArch.contains("64") || osArch.startsWith("armv8")) "-arm64" else "-arm32"}"
                 else if (osArch.startsWith("ppc")) "natives-linux-ppc64le"
                 else if (osArch.startsWith("riscv")) "natives-linux-riscv64"
@@ -36,7 +34,8 @@ class GameLauncherLWJGL : Plugin<Project> {
             else -> throw Error("Unrecognized or unsupported platform.")
         }
 
-        val versionCatalogsExtension: VersionCatalogsExtension = project.rootProject.extensions.getByType()
+        val versionCatalogsExtension: VersionCatalogsExtension =
+            project.rootProject.extensions.getByType()
         val version = versionCatalogsExtension.named("libs").findVersion("lwjgl")
             .orElseThrow { Error("Please specify lwjgl version in gradle/libs.versions.toml") }.displayName
 
