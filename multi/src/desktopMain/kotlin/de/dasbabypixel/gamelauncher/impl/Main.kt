@@ -12,9 +12,8 @@ fun main() {
     println("ABC")
     println(Thread.currentThread.name)
     println(Thread.currentThread.group)
-    getLogger<Test2>().warn("test")
-    getLogger<Test2>().warn("test")
-    getLogger<Test2>().error("test")
+    val l = getLogger<Test2>()
 
+    l.warn("Test")
     println("ABC")
 }

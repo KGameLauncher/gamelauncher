@@ -13,3 +13,8 @@ actual fun <T : Any> getLogger(cls: KClass<T>): Logger =
 actual fun getMarker(marker: String): Marker = SLF4JMarker(MarkerFactory.getMarker(marker))
 actual fun Logger.withDefaultMarker(marker: Marker): Logger =
     SLF4JLogger(MarkerLogger((this as SLF4JLogger).l, (marker as SLF4JMarker).m))
+
+enum class LogUse {
+    NORMAL,
+    STREAM
+}

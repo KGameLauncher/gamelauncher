@@ -16,7 +16,7 @@ object PatternParser {
                 state.cursor++
             }
 
-            while (state.parserStates.size > 0) {
+            while (state.parserStates.isNotEmpty()) {
                 state.parserState.tryEnd(state)
             }
 
@@ -28,8 +28,7 @@ object PatternParser {
 
     private val List<ParseResult>.build: ParseResult
         get() = if (size == 1) this[0] else if (isEmpty()) ParseResult.Empty else ParseResult.Multi(
-            this
-        )
+            this)
 
     private sealed interface Parser {
         fun parse(state: State, char: Char)

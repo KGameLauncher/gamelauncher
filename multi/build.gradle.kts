@@ -26,8 +26,7 @@ kotlin {
     }
 
     sourceSets {
-        commonMain.dependencies {
-        }
+        commonMain.dependencies {}
         val jvmCommon by registering {
             dependsOn(commonMain.get())
         }
@@ -58,6 +57,7 @@ abstract class Template : JavaExec() {
         jvmArgs("-Dgamelauncher.skipsysprops=true")
         val charset = Charset.defaultCharset()
         jvmArgs("-Dstdout.encoding=${charset.name()}", "-Dstderr.encoding=${charset.name()}")
+        outputs.upToDateWhen { false }
         standardInput = System.`in`
         standardOutput = System.out
         errorOutput = System.err

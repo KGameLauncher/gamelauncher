@@ -8,6 +8,7 @@ import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_TRACE
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_UNKNOWN
 import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_WARN
 import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
+import de.dasbabypixel.gamelauncher.api.util.logging.LogUse
 import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult
 import de.dasbabypixel.gamelauncher.api.util.logging.PatternException
 
@@ -38,8 +39,8 @@ object Log4jPatternSerializer {
         if (missing) throw PatternException("Missing patterns in platform")
     }
 
-    fun serialize(parse: ParseResult): String {
-        val state = State()
+    fun serialize(parse: ParseResult, logUse: LogUse): String {
+        val state = State(Context(logUse))
         state.serialize(if (parse.simplified) parse else parse.simplify())
         if (state.textBuilder.isNotEmpty()) {
             state.builder.append(state.textBuilder)
@@ -47,7 +48,9 @@ object Log4jPatternSerializer {
         return state.build()
     }
 
-    private class State {
+    class Context(val logUse: LogUse)
+
+    private class State(val context: Context) {
         private val styles = ArrayList<Styles>()
         val builder = StringBuilder()
         val textBuilder = StringBuilder()
@@ -170,7 +173,10 @@ object Log4jPatternSerializer {
             override fun serialize(state: State, format: ParseResult.Formatted) {
                 format.assertContentNull()
                 format.assertOptionsNull()
-                state.addStyleable("%c{1.}")
+                when (state.context.logUse) {
+                    LogUse.NORMAL -> state.addStyleable("%c{1.}")
+                    LogUse.STREAM -> state.addStyleable("%c{1.}")
+                }
             }
         }
 
