@@ -51,12 +51,14 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
         val tracker = ResourceTracker.global
 
         val surface = MemoryStack.stackPush().use { stack ->
+            val vulkanInstance = VKAccess.instance
+            val vkInstance = vulkanInstance.instance
             val pSurface = stack.mallocLong(1)
-            GLFWVulkan.glfwCreateWindowSurface(VKAccess.instance.instance,
+            GLFWVulkan.glfwCreateWindowSurface(vkInstance.instance,
                 handle,
-                VKAccess.instance.pAllocator,
+                vkInstance.pAllocator,
                 pSurface).vkValidate()
-            VKSurface(tracker, pSurface.get(0), VKAccess.instance)
+            VKSurface(tracker, pSurface.get(0), vulkanInstance)
         }
         val id = system.nextId()
         return GLFWWindow(system, id, tracker, handle, surface).also {

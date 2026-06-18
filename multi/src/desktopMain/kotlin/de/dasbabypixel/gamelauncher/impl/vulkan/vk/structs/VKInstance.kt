@@ -23,7 +23,6 @@ class VKInstance : AbstractGameResource {
     val pAllocator: VkAllocationCallbacks?
     val instance: VkInstance
     private var messenger: Long = 0
-    val devices = mutableSetOf<VKDevice>()
 
     constructor(
         tracker: ResourceTracker,
@@ -107,7 +106,6 @@ class VKInstance : AbstractGameResource {
     }
 
     override fun cleanup0(): CompletableFuture<Unit>? {
-        devices.toList().map { it.cleanupAsync() }.forEach { it.join() }
         VK10.vkDestroyInstance(instance, pAllocator)
         return null
     }

@@ -1,7 +1,5 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
-import de.dasbabypixel.gamelauncher.impl.vulkan.VKInitializer.selectExtensions
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKInstance
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKPhysicalDevice
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurface
@@ -20,7 +18,7 @@ object VKDeviceSelection {
         mutableSetOf(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
     private val optionalDeviceExtensions =
         mutableSetOf(KHRPortabilitySubset.VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
-    private val logger by getLogger()
+    private val logger by getVKLogger()
 
     private fun VkQueueFamilyProperties.supportsGraphics(): Boolean {
         return (queueFlags() and VK10.VK_QUEUE_GRAPHICS_BIT) == VK10.VK_QUEUE_GRAPHICS_BIT
@@ -61,7 +59,7 @@ object VKDeviceSelection {
                     return@use null
                 }
 
-                val selectedExtensions = selectExtensions("device",
+                val selectedExtensions = VKUtil.selectExtensions("device",
                     availableExtensions,
                     requiredDeviceExtensions,
                     optionalDeviceExtensions)
@@ -102,5 +100,4 @@ object VKDeviceSelection {
         val graphicsQueueIndex: Int,
         val selectedExtensions: Set<String>
     )
-
 }

@@ -13,13 +13,8 @@ class VKDevice(
     val device: VkDevice,
     val pAllocator: VkAllocationCallbacks?
 ) : AbstractGameResource(tracker) {
-    init {
-        instance.devices.add(this)
-    }
-
     override fun cleanup0(): CompletableFuture<Unit>? {
         VK10.vkDestroyDevice(device, pAllocator)
-        instance.devices.remove(this)
         return null
     }
 }
