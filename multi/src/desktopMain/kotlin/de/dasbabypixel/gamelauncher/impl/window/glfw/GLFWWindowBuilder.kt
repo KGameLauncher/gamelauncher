@@ -1,10 +1,11 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
+import de.dasbabypixel.gamelauncher.api.math.Vec2i
 import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.impl.vulkan.VKAccess
-import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurface
+import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanAccess
+import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSwapChain
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
@@ -50,20 +51,35 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
 
         val tracker = ResourceTracker.global
 
-        val surface = MemoryStack.stackPush().use { stack ->
-            val vulkanInstance = VKAccess.instance
-            val vkInstance = vulkanInstance.instance
+        val surface = VulkanAccess.instance.createSurface { stack, instance ->
             val pSurface = stack.mallocLong(1)
-            GLFWVulkan.glfwCreateWindowSurface(vkInstance.instance,
+            GLFWVulkan.glfwCreateWindowSurface(instance.instance,
                 handle,
-                vkInstance.pAllocator,
+                instance.pAllocator,
                 pSurface).vkValidate()
-            VKSurface(tracker, pSurface.get(0), vulkanInstance)
+            pSurface.get(0)
         }
         val id = system.nextId()
-        return GLFWWindow(system, id, tracker, handle, surface).also {
+
+        val iconified = GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE
+        val maximized = GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_MAXIMIZED) == GLFW.GLFW_TRUE
+        val framebufferSize = MemoryStack.stackPush().use { stack ->
+            val pWidth = stack.mallocInt(1)
+            val pHeight = stack.mallocInt(1)
+            GLFW.glfwGetFramebufferSize(handle, pWidth, pHeight)
+            Vec2i(pWidth.get(0), pHeight.get(0))
+        }
+        val swapChain = VulkanSwapChain.create(tracker, surface, framebufferSize)
+        return GLFWWindow(system,
+            id,
+            tracker,
+            handle,
+            framebufferSize,
+            iconified,
+            maximized,
+            swapChain,
+            surface).also {
             system.windows.add(it)
-            it.glfwCreate()
         }
     }
 }

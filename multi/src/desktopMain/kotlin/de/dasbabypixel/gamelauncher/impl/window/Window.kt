@@ -2,10 +2,10 @@ package de.dasbabypixel.gamelauncher.impl.window
 
 import de.dasbabypixel.gamelauncher.api.resource.GameResource
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurface
+import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSurface
 
 interface Window : GameResource {
-    val surface: VKSurface
+    val surface: VulkanSurface
 
     /**
      * Schedules the window to be shown. Because of OS constraints, this operation may not be immediate. Waiting for the future is safe.

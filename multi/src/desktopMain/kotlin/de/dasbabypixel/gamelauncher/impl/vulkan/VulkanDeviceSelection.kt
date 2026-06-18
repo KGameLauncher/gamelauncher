@@ -13,7 +13,7 @@ import org.lwjgl.vulkan.VkPhysicalDeviceFeatures
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties
 import org.lwjgl.vulkan.VkQueueFamilyProperties
 
-object VKDeviceSelection {
+object VulkanDeviceSelection {
     private val requiredDeviceExtensions =
         mutableSetOf(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
     private val optionalDeviceExtensions =

@@ -1,13 +1,15 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
 import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
+import de.dasbabypixel.gamelauncher.api.math.Vec2i
 import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.api.util.function.GameFunction
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
-import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurface
+import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSurface
+import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSwapChain
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback
@@ -15,23 +17,28 @@ import org.lwjgl.glfw.GLFWWindowCloseCallback
 import org.lwjgl.glfw.GLFWWindowIconifyCallback
 import org.lwjgl.glfw.GLFWWindowMaximizeCallback
 import org.lwjgl.system.Callback
-import org.lwjgl.system.MemoryStack
 import java.util.concurrent.ForkJoinPool
 import kotlin.concurrent.Volatile
 
 class GLFWWindow(
     val system: GLFWWindowSystem,
-    val id: Int,
+    id: Int,
     tracker: ResourceTracker,
     private val handle: Long,
-    override val surface: VKSurface
+    framebufferSize: Vec2i,
+    iconified: Boolean,
+    maximized: Boolean,
+    swapChain: VulkanSwapChain,
+    override val surface: VulkanSurface
 ) : AbstractGameResource(tracker), Window {
     private var valid: Boolean = true
     private val callbacks: List<CB<*>> = callbackTypes.map { CB(it) }
-    private var iconified: Boolean = false
-    private var maximized: Boolean = false
-    private var framebufferWidth: Int = -1
-    private var framebufferHeight: Int = -1
+    private var iconified: Boolean = iconified
+    private var maximized: Boolean = maximized
+    private var swapChain: VulkanSwapChain = swapChain
+    var framebufferSize: Vec2i = framebufferSize
+        private set
+        get() = field.also { GLFWThread.ensureOnThread() }
 
     private class CB<T>(val type: CBType<T>, var value: T? = null) {
         fun create(window: GLFWWindow) {
@@ -47,11 +54,7 @@ class GLFWWindow(
         }
     }
 
-    private class CBType<T>(
-        val create: (GLFWWindow) -> T, val register: (Long, T) -> Unit, val free: (T) -> Unit
-    )
-
-    internal fun glfwCreate() {
+    init {
         GLFWThread.ensureOnThread()
         callbacks.forEach {
             it.create(this)
@@ -59,28 +62,25 @@ class GLFWWindow(
         callbacks.forEach {
             it.register(handle)
         }
-        iconified = GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE
-        maximized = GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_MAXIMIZED) == GLFW.GLFW_TRUE
-        MemoryStack.stackPush().use { stack ->
-            val pWidth = stack.mallocInt(1)
-            val pHeight = stack.mallocInt(1)
-            GLFW.glfwGetFramebufferSize(handle, pWidth, pHeight)
-            framebufferWidth = pWidth.get(0)
-            framebufferHeight = pHeight.get(0)
-        }
     }
+
+    private class CBType<T>(
+        val create: (GLFWWindow) -> T, val register: (Long, T) -> Unit, val free: (T) -> Unit
+    )
 
     @Volatile
     private var visible: Boolean = false
     override fun cleanup0(): CompletableFuture<Unit> {
-        return surface.cleanupAsync().thenComposeAsync(ForkJoinPool.commonPool()) {
-            submit {
-                GLFW.glfwDestroyWindow(handle)
-                callbacks.forEach { it.free() }
-                system.windows.remove(this)
-                valid = false
+        return swapChain.cleanupAsync()
+            .thenCompose { surface.cleanupAsync() }
+            .thenComposeAsync(ForkJoinPool.commonPool()) {
+                submit {
+                    GLFW.glfwDestroyWindow(handle)
+                    callbacks.forEach { it.free() }
+                    system.windows.remove(this)
+                    valid = false
+                }
             }
-        }
     }
 
     override fun show(): CompletableFuture<Unit> {
@@ -149,12 +149,11 @@ class GLFWWindow(
                 GLFWFramebufferSizeCallback.create { _, width, height ->
                     logger.debug("Framebuffer size for {} changed from {}x{} to {}x{}",
                         window.identifier,
-                        window.framebufferWidth,
-                        window.framebufferHeight,
+                        window.framebufferSize.x,
+                        window.framebufferSize.y,
                         width,
                         height)
-                    window.framebufferWidth = width
-                    window.framebufferHeight = height
+                    window.framebufferSize = Vec2i(width, height)
                 }
             }
         }

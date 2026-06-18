@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-object VKAccess {
+object VulkanAccess {
     val instance: VulkanInstance
-        get() = VKInitializer.vulkanInstance!!
+        get() = VulkanInitializer.vulkanInstance!!
 }

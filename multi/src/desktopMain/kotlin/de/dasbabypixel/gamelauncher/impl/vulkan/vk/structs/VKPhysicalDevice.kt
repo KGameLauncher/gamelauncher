@@ -9,7 +9,7 @@ import org.lwjgl.vulkan.VkPhysicalDeviceProperties
 import org.lwjgl.vulkan.VkQueueFamilyProperties
 import java.nio.ByteBuffer
 
-class VKPhysicalDevice(val device: VkPhysicalDevice) {
+class VKPhysicalDevice(val instance: VKInstance, val device: VkPhysicalDevice) {
     fun properties(properties: VkPhysicalDeviceProperties) {
         VK10.vkGetPhysicalDeviceProperties(device, properties)
     }
