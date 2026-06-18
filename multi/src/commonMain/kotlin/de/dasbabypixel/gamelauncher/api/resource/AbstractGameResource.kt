@@ -12,7 +12,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 @OptIn(ExperimentalAtomicApi::class)
 abstract class AbstractGameResource : GameResource.StackCapable {
     companion object {
-        private val logger by lazy { getLogger<AbstractGameResource>() }
+        private val logger by getLogger()
     }
 
     final override var creationStack: StackTrace? = null
@@ -38,24 +38,26 @@ abstract class AbstractGameResource : GameResource.StackCapable {
     constructor(tracker: ResourceTracker) {
         this.tracker = tracker
 
-        if (tracker.enabled) {
-            if (this.autoTrack) {
-                track()
-            }
+        if (this.autoTrack) {
+            track(dropStack = 2u)
         }
     }
 
-    protected fun track(thread: Thread = currentThread) {
-        if (!created.compareAndSet(
-                expectedValue = false, newValue = true
-            )
-        ) throw IllegalStateException("Already tracked")
-        creationThreadName = thread.name
-        creationStack = thread.stacktrace
-        startTracking(tracker)
+    fun stopTracking() = stopTracking(tracker)
 
-        cleanupFuture.whenComplete { _, _ ->
-            stopTracking(tracker)
+    protected fun track(thread: Thread? = null, dropStack: UInt = 0u) {
+        if (!created.compareAndSet(expectedValue = false,
+                newValue = true)
+        ) throw IllegalStateException("Already tracked")
+        if (tracker.enabled) {
+            val thread = thread ?: currentThread
+            creationThreadName = thread.name
+            creationStack = thread.stackTrace.drop(dropStack)
+            startTracking(tracker)
+
+            cleanupFuture.whenComplete { _, _ ->
+                stopTracking(tracker)
+            }
         }
     }
 
@@ -63,17 +65,18 @@ abstract class AbstractGameResource : GameResource.StackCapable {
 
     final override fun cleanupAsync(): CompletableFuture<Unit> {
         if (!created.load()) throw IllegalStateException("Resource was never tracked")
-        if (calledCleanup.compareAndSet(false, true)) {
+        if (calledCleanup.compareAndSet(expectedValue = false, newValue = true)) {
             if (tracker.enabled) {
                 val thread = currentThread
-                cleanupStack = thread.stacktrace
+                cleanupStack = thread.stackTrace
                 cleanupThreadName = thread.name
             }
             val f = try {
                 cleanup0()
             } catch (ex: Throwable) {
-                logger.error("Failed to cleanup GameResource", ex)
-                null
+                stopTracking(tracker)
+                cleanupFuture.completeExceptionally(ex)
+                return cleanupFuture
             }
             if (f == null) {
                 stopTracking(tracker)
@@ -89,9 +92,9 @@ abstract class AbstractGameResource : GameResource.StackCapable {
             val ex = GameException("Multiple cleanups")
             if (tracker.enabled) {
                 val creation = GameException("CreationStack: $creationThreadName")
-                creation.stacktrace = creationStack!!
+                creation.stackTrace = creationStack!!
                 val cleanup = GameException("CleanupStack: $cleanupThreadName")
-                cleanup.stacktrace = cleanupStack!!
+                cleanup.stackTrace = cleanupStack!!
                 ex.addSuppressed(creation)
                 ex.addSuppressed(cleanup)
             }

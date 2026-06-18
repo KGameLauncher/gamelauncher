@@ -2,43 +2,40 @@ package de.dasbabypixel.gamelauncher.api.util.concurrent
 
 import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.resource.stopTracking
-import de.dasbabypixel.gamelauncher.api.util.function.GameRunnable
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
-import de.dasbabypixel.gamelauncher.api.util.stack.StackTrace
 
 abstract class AbstractThreadTask(tracker: ResourceTracker, val thread: Thread) :
     AbstractGameResource(tracker), ThreadTask {
     companion object {
-        val logger = getLogger<AbstractThreadTask>()
+        val logger by getLogger()
     }
 
     override val autoTrack: Boolean
-        get() = customStart
+        get() = false
     protected open val customStart: Boolean
         get() = false
 
-    fun start() {
+    override fun start(internalStart: () -> Unit) {
         if (customStart) {
-            customStart()
+            customStart(internalStart)
         } else {
-            track()
-            thread.start()
-            logger.info("Started thread ${thread.name}[${thread.group.name}]")
+            track(dropStack = 2u)
+            internalStart()
+            logger.debug("Started thread ${thread.name}[${thread.group.name}]")
         }
     }
 
-    protected open fun customStart() {
+    protected open fun customStart(internalStart: () -> Unit) {
     }
 
     abstract fun run0()
 
-    override fun run() {
+    final override fun run() {
         try {
             run0()
         } catch (e: Throwable) {
             logger.error("Uncaught exception in ${thread.name}", e)
-            stopTracking(tracker)
+            stopTracking()
         }
     }
 }

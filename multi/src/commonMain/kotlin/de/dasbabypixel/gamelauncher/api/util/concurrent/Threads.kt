@@ -1,16 +1,12 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
 import de.dasbabypixel.gamelauncher.api.resource.GameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.function.GameCallable
 import de.dasbabypixel.gamelauncher.api.util.function.GameRunnable
-import de.dasbabypixel.gamelauncher.api.util.function.toCallable
 import de.dasbabypixel.gamelauncher.api.util.stack.StackTrace
-import de.dasbabypixel.gamelauncher.impl.Providable
 
 expect fun ThreadGroup.Companion.create(
-    name: String,
-    parent: ThreadGroup = currentThread.group
+    name: String, parent: ThreadGroup = currentThread.group
 ): ThreadGroup
 
 interface ThreadGroup {
@@ -33,7 +29,10 @@ expect fun Thread.Companion.create(
     daemon: Boolean = false,
     group: ThreadGroup = currentThread.group,
 ): Thread
+
 expect inline fun Thread.Companion.dumpStack()
+
+expect val ThreadGroup.Companion.root: ThreadGroup
 
 interface ThreadTaskFactory {
     fun createTask(thread: Thread): ThreadTask
@@ -41,18 +40,21 @@ interface ThreadTaskFactory {
 
 interface ThreadTask : GameResource {
     fun run()
+
+    fun start(internalStart: () -> Unit)
 }
 
 interface Thread : GameResource {
     companion object
 
-    val name: String
+    var name: String
     val group: ThreadGroup
-    val stacktrace: StackTrace
+    val stackTrace: StackTrace
     val task: ThreadTask
 
     fun start()
     fun unpark()
+    fun interrupt()
 
     fun ensureOnThread() {
         val thread = currentThread
@@ -62,9 +64,10 @@ interface Thread : GameResource {
     }
 }
 
-interface Executor {
-    fun submit(runnable: GameRunnable): CompletableFuture<Unit> = submit(runnable.toCallable())
-    fun submitGR(runnable: GameRunnable) = submit(runnable)
+@Suppress("RedundantModalityModifier")
+expect interface Executor {
+    open fun submit(runnable: GameRunnable): CompletableFuture<Unit>
+    open fun submitGR(runnable: GameRunnable): CompletableFuture<Unit>
     fun <T> submit(callable: GameCallable<T>): CompletableFuture<T>
-    fun <T> submitGC(callable: GameCallable<T>): CompletableFuture<T> = submit(callable)
+    open fun <T> submitGC(callable: GameCallable<T>): CompletableFuture<T>
 }

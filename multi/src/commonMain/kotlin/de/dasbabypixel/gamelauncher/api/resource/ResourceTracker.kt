@@ -7,7 +7,7 @@ import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 
 class ResourceTracker(val enabled: Boolean = Debug.trackResources) {
     private val resources = concurrentSet<GameResource>()
-    private val logger by lazy { getLogger<ResourceTracker>() }
+    private val logger by getLogger()
 
     fun startTrackingResource(resource: GameResource) {
         if (!enabled) return
@@ -32,7 +32,7 @@ class ResourceTracker(val enabled: Boolean = Debug.trackResources) {
         for (resource in resources) {
             if (resource is GameResource.StackCapable) {
                 val ex = GameException("Stack: ${resource.creationThreadName}")
-                resource.creationStack?.let { ex.stacktrace = it }
+                resource.creationStack?.let { ex.stackTrace = it }
 
                 logger.error("Memory Leak: {}", resource, ex)
             } else {

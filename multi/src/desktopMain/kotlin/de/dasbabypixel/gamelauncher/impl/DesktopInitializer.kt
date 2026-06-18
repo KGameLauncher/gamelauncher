@@ -1,17 +1,27 @@
 package de.dasbabypixel.gamelauncher.impl
 
-import de.dasbabypixel.gamelauncher.api.util.logging.Logger
+import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.LWJGLLogging
-import kotlin.system.measureTimeMillis
+import de.dasbabypixel.gamelauncher.impl.vulkan.VKInitializer
+import de.dasbabypixel.gamelauncher.impl.window.WindowSystems
 
 object DesktopInitializer {
-    private val logger: Logger by lazy { getLogger<DesktopInitializer>() }
-    fun init() {
-        measureTimeMillis { LWJGLLogging.init() }.let { time ->
-            logger.info("Initializing logging took {}ms", time)
-        }
-
+    private val logger by getLogger()
+    fun init(thread: StartupThread) {
         LWJGLLogging.startReader()
+
+        initWindowAndRendering(thread)
+    }
+
+    private fun initWindowAndRendering(thread: StartupThread) {
+        WindowSystems.load()
+        val windowSystem = WindowSystems.selected()
+        thread.selectedWindowSystem.complete(windowSystem)
+
+        VKInitializer.init(ResourceTracker.global, windowSystem.getVulkanExtensions())
+
+        val window = windowSystem.createWindow().build().join()
+        window.show().join()
     }
 }

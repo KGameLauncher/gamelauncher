@@ -12,7 +12,7 @@ abstract class AbstractExecutorThread(
     tracker: ResourceTracker, thread: Thread, private val customAwaitingSystem: Boolean = false
 ) : AbstractThreadTask(tracker, thread), StackTraceSnapshot.CauseContainer, ExecutorThreadTask {
     companion object {
-        private val logger = getLogger<AbstractExecutorThread>()
+        private val logger by getLogger()
     }
 
     final override var cause: StackTraceSnapshot? = null
@@ -23,7 +23,7 @@ abstract class AbstractExecutorThread(
             e.execute()
         } catch (t: Throwable) {
             val ex = buildStackTrace(t)
-            ex.stacktrace = StackTrace(emptyArray())
+            ex.stackTrace = StackTrace(emptyArray(), 0u)
             logger.error("Failed to execute task {}", e.call, ex)
         }
         e.clear()
@@ -32,9 +32,7 @@ abstract class AbstractExecutorThread(
     }
     private val publisher =
         mpsc.createPublisher<CompletableFuture<*>, StackTraceSnapshot, GameCallable<*>> { e, a, b, c ->
-            e.set(
-                b, c, a
-            )
+            e.set(b, c, a)
         }
     private val exitFuture = CompletableFuture<Unit>()
 
@@ -43,7 +41,7 @@ abstract class AbstractExecutorThread(
     private var exitComplete = false
     protected val workSignal = Signal()
 
-    final override fun run() {
+    final override fun run0() {
         logger.debug("Starting ${thread.name}")
         try {
             startExecuting()
@@ -132,7 +130,7 @@ abstract class AbstractExecutorThread(
 
     private fun <T> work(call: GameCallable<T>, future: CompletableFuture<T>) {
         try {
-            future.complete(call.call())
+            future.complete(call())
         } catch (ex: Throwable) {
             val ex2 = buildStackTrace(ex)
             logger.error("Failed to execute task $call", ex2)
@@ -142,7 +140,7 @@ abstract class AbstractExecutorThread(
 
     fun buildStackTrace(cause: Throwable?): GameException {
         val ex = GameException("Exception in ExecutorThread", cause)
-        ex.stacktrace = StackTrace(emptyArray())
+        ex.stackTrace = StackTrace(emptyArray(), 0u)
         val c = this.cause
         if (c != null) {
             val t = c.buildCause()

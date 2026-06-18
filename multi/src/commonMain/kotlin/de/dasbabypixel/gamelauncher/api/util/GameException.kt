@@ -3,12 +3,17 @@ package de.dasbabypixel.gamelauncher.api.util
 import de.dasbabypixel.gamelauncher.api.util.stack.StackTrace
 
 open class GameException : Exception {
-    constructor() : super()
-    constructor(message: String?) : super(message)
-    constructor(message: String?, cause: Throwable?) : super(message, cause)
-    constructor(cause: Throwable?) : super(cause)
+    constructor(message: String? = null, cause: Throwable? = null) : super(message, cause)
 
-    var stacktrace: StackTrace = collectStackTrace()
+    var stackTrace: StackTrace
+        get() = internalMutableStacktrace
+        set(value) {
+            internalMutableStacktrace = value
+        }
+//
+//    override fun fillInStackTrace(): Throwable? {
+//        return this
+//    }
 }
 
-internal expect fun GameException.collectStackTrace(): StackTrace
+internal expect var GameException.internalMutableStacktrace: StackTrace

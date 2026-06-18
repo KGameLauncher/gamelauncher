@@ -16,6 +16,7 @@ private class ExternalTask : AbstractGameResource(disabledThreadTracker), Thread
     override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
 
     override fun run() = error("Can't run")
+    override fun start(internalStart: () -> Unit) = internalStart()
 }
 
 private val disabledThreadTracker = ResourceTracker(false)
@@ -24,10 +25,15 @@ private val currentThreadLocal: ThreadLocal<Thread> = ThreadLocal.withInitial {
     if (thread is ThreadHolder) return@withInitial thread.thread
     null
 }
+private val rootThreadGroup = JThreadGroupCache[JThread.currentThread().threadGroup]
 
-fun JThread.configureThirdPartyThread() {
-    if (currentThreadLocal.get() != null) throw IllegalStateException("Already configured")
-    currentThreadLocal.set(ThreadImpl(this, ExternalTaskFactory))
+fun JThread.configureThirdPartyThread(
+    threadTaskFactory: ThreadTaskFactory = ExternalTaskFactory, overwrite: Boolean = false
+): Thread {
+    if (!overwrite && currentThreadLocal.get() != null) throw IllegalStateException("Already configured")
+    val t = ThreadImpl(this, threadTaskFactory)
+    currentThreadLocal.set(t)
+    return t
 }
 
 private class JThreadImpl(
@@ -45,17 +51,19 @@ private class JThreadImpl(
 }
 
 actual val Thread.Companion.currentThread: Thread
-    get() = currentThreadLocal.getOrSet {
-        val thread = JThread.currentThread()
-        if (thread is ForkJoinWorkerThread && thread.pool == ForkJoinPool.commonPool()) {
-            // We want to support CompletableFuture async API so we want to support ForkJoinPool
-            return@getOrSet ThreadImpl(thread, ExternalTaskFactory)
-        }
-        if (thread.isVirtual) {
-            return@getOrSet ThreadImpl(thread, ExternalTaskFactory)
-        }
+    get() {
+        return currentThreadLocal.getOrSet {
+            val thread = JThread.currentThread()
+            if (thread is ForkJoinWorkerThread && thread.pool == ForkJoinPool.commonPool()) {
+                // We want to support CompletableFuture async API so we want to support ForkJoinPool
+                return@getOrSet ThreadImpl(thread, ExternalTaskFactory)
+            }
+            if (thread.isVirtual) {
+                return@getOrSet ThreadImpl(thread, ExternalTaskFactory)
+            }
 
-        throw IllegalStateException("Current thread $thread is not a known thread")
+            throw IllegalStateException("Current thread $thread is not a known thread")
+        }
     }
 
 actual fun Thread.Companion.create(
@@ -63,3 +71,6 @@ actual fun Thread.Companion.create(
 ): Thread {
     return JThreadImpl(name, JThreadGroupCache[group], taskFactory, daemon).thread
 }
+
+actual val ThreadGroup.Companion.root: ThreadGroup
+    get() = rootThreadGroup

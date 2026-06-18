@@ -13,7 +13,7 @@ class StackTraceSnapshot(
             val thread = currentThread
             val cause = cause(thread)
             if (calculateThreadStacks) {
-                val stack = thread.stacktrace.drop(2)
+                val stack = thread.stackTrace.drop(2u)
                 return StackTraceSnapshot(stack, cause, thread)
             }
             return StackTraceSnapshot(null, cause, thread)
@@ -31,8 +31,8 @@ class StackTraceSnapshot(
     fun buildCause(): Throwable {
         val cau = cause?.buildCause()
         val c = GameException("Thread ${thread.name}", cau)
-        if (stacktrace != null) c.stacktrace = stacktrace
-        else c.stacktrace = StackTrace(emptyArray())
+        if (stacktrace != null) c.stackTrace = stacktrace
+        else c.stackTrace = StackTrace(emptyArray(), 0u)
         return c
     }
 

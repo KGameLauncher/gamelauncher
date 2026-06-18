@@ -1,69 +1,24 @@
 package de.dasbabypixel.gamelauncher.api.util.function
 
-fun <T> Function0<T>.toGameSupplier(): GameSupplier<T> = supplier(this) { invoke() }
-fun <T> Function0<T>.toGameCallable(): GameCallable<T> = callable(this) { invoke() }
-fun <T, V> Function1<T, V>.toGameFunction(): GameFunction<T, V> = function(this) { invoke(it) }
-
-fun <T> GameCallable<T>.toRunnable(): GameRunnable = runnable(this) { call() }
-
-fun GameRunnable.toCallable(): GameCallable<Unit> = callable(this) { run() }
-
-private inline fun <T> consumer(o: Any, crossinline task: (T) -> Unit): GameConsumer<T> {
-    return object : GameConsumer<T> {
-        override fun toString(): String {
-            return o.toString()
-        }
-
-        override fun accept(value: T) {
-            task(value)
-        }
+fun <T> GameCallable<T>.toRunnable(): GameRunnable = object : GameRunnable {
+    override fun invoke() {
+        this@toRunnable()
     }
+
+    override fun toString(): String = this@toRunnable.toString()
 }
 
-private inline fun <T> supplier(o: Any, crossinline task: () -> T): GameSupplier<T> {
-    return object : GameSupplier<T> {
-        override fun toString(): String {
-            return o.toString()
-        }
+fun GameRunnable.toCallable(): GameCallable<Unit> = object : GameCallable<Unit> {
+    override fun invoke() = this@toCallable.invoke()
 
-        override fun get(): T {
-            return task()
-        }
-    }
+    override fun toString(): String = this@toCallable.toString()
 }
 
-private inline fun <T, V> function(o: Any, crossinline task: (t: T) -> V): GameFunction<T, V> {
-    return object : GameFunction<T, V> {
-        override fun toString(): String {
-            return o.toString()
-        }
+expect inline fun GameRunnable.asFunction(): () -> Unit
 
-        override fun apply(value: T): V {
-            return task(value)
-        }
-    }
-}
+expect inline fun <T> GameCallable<T>.asFunction(): () -> T
 
-private inline fun runnable(o: Any, crossinline task: () -> Unit): GameRunnable {
-    return object : GameRunnable {
-        override fun toString(): String {
-            return o.toString()
-        }
+expect inline fun <T> GameConsumer<T>.asFunction(): (T) -> Unit
+expect inline fun <T, V> GameBiConsumer<T, V>.asFunction(): (T, V) -> Unit
 
-        override fun run() {
-            task()
-        }
-    }
-}
-
-private inline fun <T> callable(o: Any, crossinline task: () -> T): GameCallable<T> {
-    return object : GameCallable<T> {
-        override fun toString(): String {
-            return o.toString()
-        }
-
-        override fun call(): T {
-            return task()
-        }
-    }
-}
+expect inline fun <T, V> GameFunction<T, V>.asFunction(): (T) -> V

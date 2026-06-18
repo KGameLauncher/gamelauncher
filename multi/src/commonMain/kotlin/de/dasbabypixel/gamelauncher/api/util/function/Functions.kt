@@ -2,32 +2,27 @@ package de.dasbabypixel.gamelauncher.api.util.function
 
 import de.dasbabypixel.gamelauncher.api.util.GameException
 
-fun interface GameRunnable {
+expect fun interface GameRunnable {
     @Throws(GameException::class)
-    fun run()
+    operator fun invoke()
 }
 
-fun interface GameCallable<T> {
+expect fun interface GameCallable<T> {
     @Throws(GameException::class)
-    fun call(): T
+    operator fun invoke(): T
 }
 
-fun interface GameConsumer<T> {
+expect fun interface GameConsumer<T> {
     @Throws(GameException::class)
-    fun accept(value: T)
+    operator fun invoke(value: T)
 }
 
-fun interface GameBiConsumer<T, V> {
+expect fun interface GameBiConsumer<T, V> {
     @Throws(GameException::class)
-    fun accept(t: T, v: V)
+    operator fun invoke(t: T, v: V)
 }
 
-fun interface GameSupplier<T> {
+expect fun interface GameFunction<T, V> {
     @Throws(GameException::class)
-    fun get(): T
-}
-
-fun interface GameFunction<T, V> {
-    @Throws(GameException::class)
-    fun apply(value: T): V
+    operator fun invoke(value: T): V
 }

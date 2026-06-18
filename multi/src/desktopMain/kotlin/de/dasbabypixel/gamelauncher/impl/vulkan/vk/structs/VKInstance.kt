@@ -1,7 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs
 
+import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
-import de.dasbabypixel.gamelauncher.impl.vulkan.getVKLogger
+import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.impl.vulkan.UTF8Strings
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.EXTDebugUtils
@@ -16,16 +19,21 @@ import org.lwjgl.vulkan.VkInstance
 import org.lwjgl.vulkan.VkInstanceCreateInfo
 import org.lwjgl.vulkan.VkPhysicalDevice
 
-class VKInstance {
-    private val instance: VkInstance
+class VKInstance : AbstractGameResource {
+    val pAllocator: VkAllocationCallbacks?
+    val instance: VkInstance
+    private var messenger: Long = 0
+    val devices = mutableSetOf<VKDevice>()
 
     constructor(
+        tracker: ResourceTracker,
         stack: MemoryStack,
         pAllocator: VkAllocationCallbacks?,
         applicationInfo: VKApplicationInfo,
         enabledExtensionNames: Set<String>,
         enabledLayerNames: Set<String>
-    ) {
+    ) : super(tracker) {
+        this.pAllocator = pAllocator
         val vkApplicationInfo = VkApplicationInfo.calloc(stack).apply {
             `sType$Default`()
             pApplicationName(stack.UTF8(applicationInfo.applicationName))
@@ -34,21 +42,8 @@ class VKInstance {
             engineVersion(applicationInfo.engineVersion.vkVersion)
             apiVersion(applicationInfo.apiVersion.vk)
         }
-        val pEnabledLayerNames = stack.callocPointer(enabledLayerNames.size).apply {
-            mark()
-            for (name in enabledLayerNames) {
-                put(stack.UTF8(name))
-            }
-            reset()
-        }
-
-        val pEnabledExtensionNames = stack.callocPointer(enabledExtensionNames.size).apply {
-            mark()
-            for (name in enabledExtensionNames) {
-                put(stack.UTF8(name))
-            }
-            reset()
-        }
+        val pEnabledLayerNames = stack.UTF8Strings(enabledLayerNames)
+        val pEnabledExtensionNames = stack.UTF8Strings(enabledExtensionNames)
 
         val createInfo = VkInstanceCreateInfo.calloc(stack).apply {
             `sType$Default`()
@@ -80,8 +75,12 @@ class VKInstance {
         }
     }
 
+    fun destroyDebugMessenger() {
+        EXTDebugUtils.vkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator)
+    }
+
     fun setupDebugMessenger(
-        callback: VkDebugUtilsMessengerCallbackEXTI, allocator: VkAllocationCallbacks?
+        callback: VkDebugUtilsMessengerCallbackEXTI
     ) {
         val cb = VkDebugUtilsMessengerCallbackEXT.create(callback)
         MemoryStack.stackPush().use { stack ->
@@ -93,8 +92,9 @@ class VKInstance {
 
             EXTDebugUtils.vkCreateDebugUtilsMessengerEXT(instance,
                 createInfo,
-                allocator,
-                pMessenger)
+                pAllocator,
+                pMessenger).vkValidate()
+            messenger = pMessenger.get(0)
 
             if (testVulkanDebugger) {
                 EXTDebugUtils.vkSubmitDebugUtilsMessageEXT(instance,
@@ -106,8 +106,13 @@ class VKInstance {
         }
     }
 
+    override fun cleanup0(): CompletableFuture<Unit>? {
+        devices.toList().map { it.cleanupAsync() }.forEach { it.join() }
+        VK10.vkDestroyInstance(instance, pAllocator)
+        return null
+    }
+
     companion object {
         const val testVulkanDebugger = false
-        private val logger = getVKLogger()
     }
 }

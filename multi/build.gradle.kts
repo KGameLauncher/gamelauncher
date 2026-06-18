@@ -2,6 +2,7 @@ import de.dasbabypixel.gamelauncher.gradle.lwjglDefaultDevArgs
 import de.dasbabypixel.gamelauncher.gradle.lwjglDefaultDevInitSystemProperties
 import de.dasbabypixel.gamelauncher.gradle.lwjglMain
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import java.nio.charset.Charset
 
 plugins {
@@ -9,6 +10,10 @@ plugins {
     id("com.android.kotlin.multiplatform.library")
     alias(libs.plugins.shadow)
     id("gamelauncher-lwjgl")
+}
+
+tasks.withType<AbstractKotlinCompile<*>> {
+    compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
 }
 
 kotlin {
@@ -23,7 +28,6 @@ kotlin {
     jvm("desktop") {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_25)
-            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
 

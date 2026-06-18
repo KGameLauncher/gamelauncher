@@ -1,6 +1,8 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
-import de.dasbabypixel.gamelauncher.api.util.buildStackTrace
+import de.dasbabypixel.gamelauncher.api.util.function.GameCallable
+import de.dasbabypixel.gamelauncher.api.util.function.GameRunnable
+import de.dasbabypixel.gamelauncher.api.util.function.toCallable
 import de.dasbabypixel.gamelauncher.api.util.stack.StackTrace
 import java.util.WeakHashMap
 import java.util.concurrent.locks.LockSupport
@@ -55,19 +57,26 @@ internal object JThreadGroupCache {
 }
 
 internal class ThreadImpl(val thread: JThread, threadTaskFactory: ThreadTaskFactory) : Thread {
-    override val name: String
+    override var name: String
         get() = thread.name
+        set(value) {
+            thread.name = value
+        }
     override val group: ThreadGroup = JThreadGroupCache[thread.threadGroup]
-    override val stacktrace: StackTrace
-        get() = buildStackTrace(thread.stackTrace)
+    override val stackTrace: StackTrace
+        get() = StackTrace(thread.stackTrace, 2u)
     override val task = threadTaskFactory.createTask(this)
 
     override fun start() {
-        thread.start()
+        task.start(thread::start)
     }
 
     override fun unpark() {
         LockSupport.unpark(thread)
+    }
+
+    override fun interrupt() {
+        thread.interrupt()
     }
 
     override val cleanedUp: Boolean
@@ -84,3 +93,17 @@ actual fun Thread.Companion.sleep(millis: Long) = JThread.sleep(millis)
 
 @Suppress("NOTHING_TO_INLINE") // We inline in order to have a nicer dump
 actual inline fun Thread.Companion.dumpStack() = JThread.dumpStack()
+
+actual interface Executor : java.util.concurrent.Executor {
+    actual fun submit(runnable: GameRunnable): CompletableFuture<Unit> =
+        submit(runnable.toCallable())
+
+    actual fun <T> submit(callable: GameCallable<T>): CompletableFuture<T>
+    actual fun submitGR(runnable: GameRunnable): CompletableFuture<Unit> = submit(runnable)
+
+    actual fun <T> submitGC(callable: GameCallable<T>): CompletableFuture<T> = submit(callable)
+
+    override fun execute(p0: Runnable) {
+        submit { p0.run() }
+    }
+}

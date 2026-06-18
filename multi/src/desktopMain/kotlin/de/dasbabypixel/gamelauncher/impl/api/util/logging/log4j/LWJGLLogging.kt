@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalAtomicApi::class)
+
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
 import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
@@ -14,17 +16,23 @@ import de.dasbabypixel.gamelauncher.api.util.debug.Debug
 import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
 import de.dasbabypixel.gamelauncher.api.util.logging.LoggingPrintStream
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.api.util.logging.withDefaultMarker
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
+import org.lwjgl.system.APIUtil
 import java.io.Console
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 object LWJGLLogging {
+
+    private val logger by getLogger()
 
     init {
         Logger.getLogger("org.jline").level = Level.ALL
@@ -39,6 +47,7 @@ object LWJGLLogging {
     // We always make sure to disable "exec" provider. It causes issues with "the pipe is being closed" when reading from stdin
     private val terminal: Terminal = if (console != null) {
         TerminalBuilder.builder().signalHandler {
+            requestExit.store(true)
             JvmLogging.out.println("Receive signal ${it.name} - ${it.ordinal}")
         }.ffm(true).exec(false).apply {
             if (Debug.inIde) dumb(true).system(true)
@@ -50,7 +59,8 @@ object LWJGLLogging {
     }
 
     private val reader: LineReader
-    private var requestExit: Boolean = false
+    private var requestExit = AtomicBoolean(false)
+    private var readerThread: Thread? = null
 
     init {
         val useAnsi = DesktopConfig.useAnsi()
@@ -71,49 +81,60 @@ object LWJGLLogging {
         reader.variable(LineReader.COMPLETION_STYLE_LIST_BACKGROUND, "inverse")
 
         if (Debug.debug) {
-            val stream = LoggingPrintStream(getLogger<LWJGLLogging>("LWJGL"), printLocation = true)
-            // TODO
-//                org.lwjgl.system.Configuration.DEBUG_STREAM.set(stream)
-//                if (APIUtil.DEBUG_STREAM != stream) error("Failed to inject debug logging into LWJGL")
+            val stream = LoggingPrintStream(logger.withDefaultMarker("LWJGL"), printLocation = true)
+            org.lwjgl.system.Configuration.DEBUG_STREAM.set(stream)
+            if (APIUtil.DEBUG_STREAM != stream) error("Failed to inject debug logging into LWJGL")
         }
     }
 
     fun startReader() {
-
-        val logger = getLogger<LWJGLLogging>()
-
-        val thread =
+        readerThread =
             Thread.create(name = "Console Thread", taskFactory = object : ThreadTaskFactory {
                 override fun createTask(thread: Thread): ThreadTask {
                     return object : AbstractThreadTask(ResourceTracker.global, thread) {
+                        val exitFuture = CompletableFuture<Unit>()
+                        val exit = AtomicBoolean(false)
                         override fun run0() {
-                            while (true) {
-                                try {
-                                    if (requestExit) throw UserInterruptException("")
-                                    val prompt = if (Debug.inIde) null else "Prompt: "
-                                    val line = reader.readLine(prompt) ?: break
-                                    if (line == "exit") ShutdownHandler.shutdownGracefully()
-                                    logger.info("Read $line")
-                                } catch (_: EndOfFileException) {
-                                } catch (_: UserInterruptException) {
-                                    JvmLogging.out.println("Interrupted")
-                                    Thread.sleep(1000)
-                                    ShutdownHandler.shutdownGracefully()
-                                } catch (t: Throwable) {
-                                    logger.error("Failed to read line, exiting", t)
-                                    ShutdownHandler.shutdownByError(t)
+                            try {
+                                while (!exit.load()) {
+                                    try {
+                                        if (requestExit.load()) throw UserInterruptException("")
+                                        val prompt = if (Debug.inIde) null else "Prompt: "
+                                        val line = reader.readLine(prompt)!!
+                                        if (line == "exit") {
+                                            ShutdownHandler.shutdownGracefully()
+                                            continue
+                                        }
+                                        logger.info("Read $line")
+                                    } catch (_: EndOfFileException) {
+                                    } catch (_: UserInterruptException) {
+                                        if (!exit.load()) {
+                                            JvmLogging.out.println("User interrupted")
+                                            Thread.sleep(1000)
+                                            ShutdownHandler.shutdownGracefully()
+                                        }
+                                    } catch (t: Throwable) {
+                                        logger.error("Failed to read line, exiting", t)
+                                        ShutdownHandler.shutdownByError(t)
+                                    }
                                 }
+                            } finally {
+                                exitFuture.complete(Unit)
                             }
                         }
 
-                        override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
+                        override fun cleanup0(): CompletableFuture<Unit> {
+                            exit.store(true)
+                            thread.interrupt()
+                            return exitFuture
+                        }
                     }
                 }
-            })
-        thread.start()
+            }).also { it.start() }
     }
 
     fun exit() {
+        readerThread?.cleanupAsync()?.join()
         Log4jConfiguration.exit()
     }
 }

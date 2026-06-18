@@ -1,34 +1,32 @@
 package de.dasbabypixel.gamelauncher.impl
 
-import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.configureThirdPartyThread
-import de.dasbabypixel.gamelauncher.impl.vulkan.VKInitializer
-import org.lwjgl.glfw.GLFW
-import org.lwjgl.glfw.GLFWVulkan
-import org.lwjgl.system.MemoryStack
+import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.api.util.time.nanoTime
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.LWJGLLogging
+import kotlin.system.exitProcess
+import kotlin.system.measureTimeMillis
 import java.lang.Thread as JThread
 
+class Main {
+    companion object {
+        val logger by getLogger()
+        val startupNanos = nanoTime
+    }
+}
+
 fun main() {
+    JThread.setDefaultUncaughtExceptionHandler { thread, exception ->
+        Main.logger.error("Uncaught Exception in {}", thread.name, exception)
+        exitProcess(1)
+    }
     JThread.currentThread().configureThirdPartyThread()
-    DesktopInitializer.init()
 
-    if (!GLFW.glfwInit()) throw GameException("GLFW couldn't initialize")
-    if (!GLFWVulkan.glfwVulkanSupported()) throw GameException("GLFWVulkan not supported")
+    measureTimeMillis { LWJGLLogging.init() }.let { time ->
+        Main.logger.info("Initializing logging took {}ms", time)
+    }
 
-    val vulkanExtensions = mutableSetOf<String>()
+    val startupThread = StartupThread.create()
 
-    vulkanExtensions.addAll(MemoryStack.stackPush().use {
-        (GLFWVulkan.glfwGetRequiredInstanceExtensions()
-            ?: throw GameException("GLFWVulkan not supported: Extensions NULL")).let { p ->
-            val count = p.capacity()
-            mutableSetOf<String>().also {
-                for (i in 0 until count) {
-                    it.add(p.getStringUTF8(i))
-                }
-            }
-        }
-    })
-
-    VKInitializer.init(vulkanExtensions)
-
+    startupThread.selectedWindowSystem.join().takeOverInitialThread()
 }
