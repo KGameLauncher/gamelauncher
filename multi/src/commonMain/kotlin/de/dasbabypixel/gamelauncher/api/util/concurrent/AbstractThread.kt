@@ -4,7 +4,7 @@ import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
 import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 
-abstract class AbstractThreadTask(tracker: ResourceTracker, val thread: Thread) :
+abstract class AbstractThreadTask(tracker: ResourceTracker, override val thread: Thread) :
     AbstractGameResource(tracker), ThreadTask {
     companion object {
         val logger by getLogger()

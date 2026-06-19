@@ -8,8 +8,6 @@ import de.dasbabypixel.gamelauncher.api.util.DesktopConfig
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThreadTask
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadTask
-import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadTaskFactory
 import de.dasbabypixel.gamelauncher.api.util.concurrent.create
 import de.dasbabypixel.gamelauncher.api.util.concurrent.sleep
 import de.dasbabypixel.gamelauncher.api.util.debug.Debug
@@ -54,8 +52,12 @@ object LWJGLLogging {
             else system(true)
         }.encoding(console.charset()).build()
     } else {
-        TerminalBuilder.builder().dumb(true).system(true).exec(false)
-            .encoding(JvmLogging.out.charset()).build()
+        TerminalBuilder.builder()
+            .dumb(true)
+            .system(true)
+            .exec(false)
+            .encoding(JvmLogging.out.charset())
+            .build()
     }
 
     private val reader: LineReader
@@ -88,49 +90,46 @@ object LWJGLLogging {
     }
 
     fun startReader() {
-        readerThread =
-            Thread.create(name = "Console Thread", taskFactory = object : ThreadTaskFactory {
-                override fun createTask(thread: Thread): ThreadTask {
-                    return object : AbstractThreadTask(ResourceTracker.global, thread) {
-                        val exitFuture = CompletableFuture<Unit>()
-                        val exit = AtomicBoolean(false)
-                        override fun run0() {
+        readerThread = Thread.create(name = "Console Thread", taskFactory = { thread ->
+            object : AbstractThreadTask(ResourceTracker.global, thread) {
+                val exitFuture = CompletableFuture<Unit>()
+                val exit = AtomicBoolean(false)
+                override fun run0() {
+                    try {
+                        while (!exit.load()) {
                             try {
-                                while (!exit.load()) {
-                                    try {
-                                        if (requestExit.load()) throw UserInterruptException("")
-                                        val prompt = if (Debug.inIde) null else "Prompt: "
-                                        val line = reader.readLine(prompt)!!
-                                        if (line == "exit") {
-                                            ShutdownHandler.shutdownGracefully()
-                                            continue
-                                        }
-                                        logger.info("Read $line")
-                                    } catch (_: EndOfFileException) {
-                                    } catch (_: UserInterruptException) {
-                                        if (!exit.load()) {
-                                            JvmLogging.out.println("User interrupted")
-                                            Thread.sleep(1000)
-                                            ShutdownHandler.shutdownGracefully()
-                                        }
-                                    } catch (t: Throwable) {
-                                        logger.error("Failed to read line, exiting", t)
-                                        ShutdownHandler.shutdownByError(t)
-                                    }
+                                if (requestExit.load()) throw UserInterruptException("")
+                                val prompt = if (Debug.inIde) null else "Prompt: "
+                                val line = reader.readLine(prompt)!!
+                                if (line == "exit") {
+                                    ShutdownHandler.shutdownGracefully()
+                                    continue
                                 }
-                            } finally {
-                                exitFuture.complete(Unit)
+                                logger.info("Read $line")
+                            } catch (_: EndOfFileException) {
+                            } catch (_: UserInterruptException) {
+                                if (!exit.load()) {
+                                    JvmLogging.out.println("User interrupted")
+                                    Thread.sleep(1000)
+                                    ShutdownHandler.shutdownGracefully()
+                                }
+                            } catch (t: Throwable) {
+                                logger.error("Failed to read line, exiting", t)
+                                ShutdownHandler.shutdownByError(t)
                             }
                         }
-
-                        override fun cleanup0(): CompletableFuture<Unit> {
-                            exit.store(true)
-                            thread.interrupt()
-                            return exitFuture
-                        }
+                    } finally {
+                        exitFuture.complete(Unit)
                     }
                 }
-            }).also { it.start() }
+
+                override fun cleanup0(): CompletableFuture<Unit> {
+                    exit.store(true)
+                    thread.interrupt()
+                    return exitFuture
+                }
+            }
+        }).also { it.start() }.thread
     }
 
     fun exit() {

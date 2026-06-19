@@ -38,7 +38,8 @@ class VulkanLogicalDevice(
 
                 val pQueue = stack.mallocPointer(1)
                 VK10.vkGetDeviceQueue(device.device, physicalDevice.graphicsQueueIndex, 0, pQueue)
-                val graphicsQueue = VKQueue(VkQueue(pQueue.get(0), device.device))
+                val graphicsQueue = VKQueue(VkQueue(pQueue.get(0), device.device),
+                    physicalDevice.graphicsQueueIndex)
 
                 VulkanLogicalDevice(tracker, device, graphicsQueue, instance)
             }

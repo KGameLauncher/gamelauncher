@@ -5,7 +5,6 @@ import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanAccess
-import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSwapChain
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
@@ -69,7 +68,6 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
             GLFW.glfwGetFramebufferSize(handle, pWidth, pHeight)
             Vec2i(pWidth.get(0), pHeight.get(0))
         }
-        val swapChain = VulkanSwapChain.create(tracker, surface, framebufferSize)
         return GLFWWindow(system,
             id,
             tracker,
@@ -77,7 +75,6 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
             framebufferSize,
             iconified,
             maximized,
-            swapChain,
             surface).also {
             system.windows.add(it)
         }

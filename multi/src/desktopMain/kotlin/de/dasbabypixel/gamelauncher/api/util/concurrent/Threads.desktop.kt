@@ -9,10 +9,11 @@ import java.lang.Thread as JThread
 import java.lang.ThreadGroup as JThreadGroup
 
 private object ExternalTaskFactory : ThreadTaskFactory {
-    override fun createTask(thread: Thread): ThreadTask = ExternalTask()
+    override fun createTask(thread: Thread): ThreadTask = ExternalTask(thread)
 }
 
-private class ExternalTask : AbstractGameResource(disabledThreadTracker), ThreadTask {
+private class ExternalTask(override val thread: Thread) :
+    AbstractGameResource(disabledThreadTracker), ThreadTask {
     override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
 
     override fun run() = error("Can't run")
@@ -26,6 +27,14 @@ private val currentThreadLocal: ThreadLocal<Thread> = ThreadLocal.withInitial {
     null
 }
 private val rootThreadGroup = JThreadGroupCache[JThread.currentThread().threadGroup]
+
+fun JThread.configureThirdPartyThread(
+    threadTaskFactory: (Thread) -> ThreadTask, overwrite: Boolean = false
+): Thread {
+    return configureThirdPartyThread(object : ThreadTaskFactory {
+        override fun createTask(thread: Thread): ThreadTask = threadTaskFactory(thread)
+    }, overwrite)
+}
 
 fun JThread.configureThirdPartyThread(
     threadTaskFactory: ThreadTaskFactory = ExternalTaskFactory, overwrite: Boolean = false

@@ -9,7 +9,6 @@ import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.api.util.function.GameFunction
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSurface
-import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSwapChain
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback
@@ -28,17 +27,18 @@ class GLFWWindow(
     framebufferSize: Vec2i,
     iconified: Boolean,
     maximized: Boolean,
-    swapChain: VulkanSwapChain,
     override val surface: VulkanSurface
 ) : AbstractGameResource(tracker), Window {
     private var valid: Boolean = true
     private val callbacks: List<CB<*>> = callbackTypes.map { CB(it) }
     private var iconified: Boolean = iconified
     private var maximized: Boolean = maximized
-    private var swapChain: VulkanSwapChain = swapChain
+    val identifier: String = "window-$id"
+
+    @Volatile
     var framebufferSize: Vec2i = framebufferSize
         private set
-        get() = field.also { GLFWThread.ensureOnThread() }
+    val renderThread: GLFWRenderThread = GLFWRenderThread.create(tracker, this)
 
     private class CB<T>(val type: CBType<T>, var value: T? = null) {
         fun create(window: GLFWWindow) {
@@ -62,6 +62,7 @@ class GLFWWindow(
         callbacks.forEach {
             it.register(handle)
         }
+        renderThread.start()
     }
 
     private class CBType<T>(
@@ -71,7 +72,7 @@ class GLFWWindow(
     @Volatile
     private var visible: Boolean = false
     override fun cleanup0(): CompletableFuture<Unit> {
-        return swapChain.cleanupAsync()
+        return renderThread.cleanupAsync()
             .thenCompose { surface.cleanupAsync() }
             .thenComposeAsync(ForkJoinPool.commonPool()) {
                 submit {
@@ -112,8 +113,6 @@ class GLFWWindow(
             c(handle)
         }
     }
-
-    private val identifier: String = "window-$id"
 
     companion object {
         private val logger by getLogger()

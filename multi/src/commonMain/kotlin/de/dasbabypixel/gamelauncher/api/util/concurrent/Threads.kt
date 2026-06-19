@@ -30,6 +30,19 @@ expect fun Thread.Companion.create(
     group: ThreadGroup = currentThread.group,
 ): Thread
 
+inline fun <reified T : ThreadTask> Thread.Companion.create(
+    name: String,
+    crossinline taskFactory: (Thread) -> T,
+    daemon: Boolean = false,
+    group: ThreadGroup = currentThread.group
+): T {
+    return create(name, object : ThreadTaskFactory {
+        override fun createTask(thread: Thread): ThreadTask {
+            return taskFactory(thread)
+        }
+    }, daemon, group).task as T
+}
+
 expect inline fun Thread.Companion.dumpStack()
 
 expect val ThreadGroup.Companion.root: ThreadGroup
@@ -39,9 +52,13 @@ interface ThreadTaskFactory {
 }
 
 interface ThreadTask : GameResource {
+    val thread: Thread
+
     fun run()
 
     fun start(internalStart: () -> Unit)
+
+    fun start() = thread.start()
 }
 
 interface Thread : GameResource {

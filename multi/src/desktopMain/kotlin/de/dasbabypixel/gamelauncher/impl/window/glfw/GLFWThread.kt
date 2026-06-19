@@ -5,8 +5,6 @@ import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadTask
-import de.dasbabypixel.gamelauncher.api.util.concurrent.ThreadTaskFactory
 import de.dasbabypixel.gamelauncher.api.util.concurrent.configureThirdPartyThread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
@@ -96,11 +94,8 @@ class GLFWThread(tracker: ResourceTracker, thread: Thread) :
          */
         fun takeOverByGLFW() {
             val thread = java.lang.Thread.currentThread()
-                .configureThirdPartyThread(object : ThreadTaskFactory {
-                    override fun createTask(thread: Thread): ThreadTask {
-                        return GLFWThread(ResourceTracker.global, thread)
-                    }
-                }, overwrite = true)
+                .configureThirdPartyThread({ thread -> GLFWThread(ResourceTracker.global, thread) },
+                    overwrite = true)
             thread.name = "GLFW-Thread"
             this.thread.complete(thread)
             thread.task.run()

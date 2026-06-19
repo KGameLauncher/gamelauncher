@@ -37,7 +37,7 @@ class VKDevice(
             deviceQueues: Collection<VKDeviceQueueCreateInfo>,
             selectedExtensions: Collection<String>
         ): VKDevice {
-            val device = MemoryStack.stackPush().use { stack ->
+            return MemoryStack.stackPush().use { stack ->
                 val queueInfos =
                     VkDeviceQueueCreateInfo.calloc(deviceQueues.size, stack).`sType$Default`()
                 for (indexed in deviceQueues.withIndex()) {
@@ -57,6 +57,7 @@ class VKDevice(
                         .shaderDrawParameters(true))
                     .pNext(VkPhysicalDeviceVulkan13Features.calloc(stack)
                         .`sType$Default`()
+                        .synchronization2(true)
                         .dynamicRendering(true))
                     .pNext(VkPhysicalDeviceExtendedDynamicStateFeaturesEXT.calloc(stack)
                         .`sType$Default`()
@@ -69,9 +70,9 @@ class VKDevice(
                     deviceCreateInfo,
                     instance.pAllocator,
                     pDevice).vkValidate()
-                VkDevice(pDevice.get(0), physicalDevice.device, deviceCreateInfo)
+                val device = VkDevice(pDevice.get(0), physicalDevice.device, deviceCreateInfo)
+                VKDevice(tracker, instance, device, physicalDevice, instance.pAllocator)
             }
-            return VKDevice(tracker, instance, device, physicalDevice, instance.pAllocator)
         }
     }
 }

@@ -31,8 +31,8 @@ class VKSwapChain(
             minImageCount: Int,
             extent: VKExtent2D,
             surfaceFormat: VKSurfaceFormatKHR,
-            preTransform: VKSurfaceTransformFlagBitsKHR,
-            presentMode: VKPresentModeKHR
+            preTransform: VkSurfaceTransformFlagBitsKHR,
+            presentMode: VkPresentModeKHR
         ): VKSwapChain {
             return MemoryStack.stackPush().use { stack ->
                 val swapChainCreateInfo = VkSwapchainCreateInfoKHR.calloc(stack)

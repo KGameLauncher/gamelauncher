@@ -5,6 +5,7 @@ import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKPhysicalDevice
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurface
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
+import org.lwjgl.vulkan.EXTSwapchainMaintenance1
 import org.lwjgl.vulkan.KHRPortabilitySubset
 import org.lwjgl.vulkan.KHRSurface
 import org.lwjgl.vulkan.KHRSwapchain
@@ -17,7 +18,8 @@ object VulkanDeviceSelection {
     private val requiredDeviceExtensions =
         mutableSetOf(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
     private val optionalDeviceExtensions =
-        mutableSetOf(KHRPortabilitySubset.VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
+        mutableSetOf(KHRPortabilitySubset.VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+            EXTSwapchainMaintenance1.VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME)
     private val logger by getVKLogger()
 
     private fun VkQueueFamilyProperties.supportsGraphics(): Boolean {
@@ -63,6 +65,9 @@ object VulkanDeviceSelection {
                     availableExtensions,
                     requiredDeviceExtensions,
                     optionalDeviceExtensions)
+                optionalDeviceExtensions.minus(selectedExtensions).forEach {
+                    logger.debug("Missing optional device extension {}", it)
+                }
 
                 SelectedPhysicalDevice(device, graphicsQueue.index, selectedExtensions)
             }

@@ -7,8 +7,9 @@ import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurfaceFormatKHR
-import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurfaceTransformFlagBitsKHR
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSwapChain
+import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkImage
+import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkSurfaceTransformFlagBitsKHR
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.KHRSurface
 import org.lwjgl.vulkan.KHRSwapchain
@@ -20,7 +21,10 @@ import java.nio.IntBuffer
 import kotlin.math.max
 
 class VulkanSwapChain(
-    tracker: ResourceTracker, val swapChain: VKSwapChain, val surface: VulkanSurface
+    tracker: ResourceTracker,
+    val swapChain: VKSwapChain,
+    val surface: VulkanSurface,
+    val device: VulkanLogicalDevice
 ) : AbstractGameResource(tracker) {
     val images: List<Image>
     val extent: Vec2i
@@ -49,7 +53,7 @@ class VulkanSwapChain(
         return swapChain.cleanupAsync()
     }
 
-    class Image(val handle: Long)
+    class Image(val handle: VkImage)
 
     companion object {
         fun create(
@@ -71,7 +75,7 @@ class VulkanSwapChain(
                 }
                 val presentMode =
                     surface.availablePresentModes(device) { chooseSwapPresentMode(it) }
-                val preTransform: VKSurfaceTransformFlagBitsKHR =
+                val preTransform: VkSurfaceTransformFlagBitsKHR =
                     surfaceCapabilities.currentTransform()
 
                 val swapChain = VKSwapChain.create(tracker,
@@ -83,7 +87,7 @@ class VulkanSwapChain(
                     preTransform,
                     presentMode)
 
-                VulkanSwapChain(tracker, swapChain, vulkanSurface)
+                VulkanSwapChain(tracker, swapChain, vulkanSurface, vulkanSurface.logicalDevice)
             }
         }
 
