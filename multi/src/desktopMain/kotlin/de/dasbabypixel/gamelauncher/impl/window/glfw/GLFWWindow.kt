@@ -153,6 +153,7 @@ class GLFWWindow(
                         width,
                         height)
                     window.framebufferSize = Vec2i(width, height)
+                    window.renderThread.framebufferResized()
                 }
             }
         }

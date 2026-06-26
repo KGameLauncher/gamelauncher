@@ -35,6 +35,12 @@ include("engine:implementation:providers")
 include("engine:implementation:opengl")
 include("engine:implementation:vulkan")
 include("engine:implementation:lwjgl")
+
+include("core:util")
+include("core:service-loader")
+include("core:base")
+include("core:logging")
+include("core:graphics")
 include("multi")
 //include("executables")
 
