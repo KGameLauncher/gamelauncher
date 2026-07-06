@@ -1,0 +1,104 @@
+package de.dasbabypixel.gamelauncher.util.resource
+
+import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.currentThread
+import de.dasbabypixel.gamelauncher.util.stack.StackTrace
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+
+@OptIn(ExperimentalAtomicApi::class)
+abstract class AbstractGameResource : GameResource.StackCapable {
+
+    final override var creationStack: StackTrace? = null
+        private set
+    final override var creationThreadName: String? = null
+        private set
+    final override var cleanupStack: StackTrace? = null
+        private set
+    final override var cleanupThreadName: String? = null
+        private set
+
+    protected val tracker: ResourceTracker
+    private val created = AtomicBoolean(false)
+    private val calledCleanup = AtomicBoolean(false)
+
+    final override val cleanedUp: Boolean
+        get() = cleanupFuture.isDone
+    final override val cleanupFuture: CompletableFuture<Unit> = CompletableFuture()
+
+    val autoTrack: Boolean
+
+    constructor(tracker: ResourceTracker) : this(tracker, true)
+    constructor(tracker: ResourceTracker, autoTrack: Boolean) {
+        this.tracker = tracker
+        this.autoTrack = autoTrack
+
+        if (this.autoTrack) {
+            track(dropStack = 2u)
+        }
+    }
+
+    fun stopTracking() = stopTracking(tracker)
+
+    protected fun track(thread: Thread? = null, dropStack: UInt = 0u) {
+        if (!created.compareAndSet(
+                expectedValue = false, newValue = true
+            )
+        ) throw IllegalStateException("Already tracked")
+        if (tracker.enabled) {
+            val thread = thread ?: currentThread
+            creationThreadName = thread.name
+            creationStack = thread.stackTrace.drop(dropStack)
+            startTracking(tracker)
+
+            cleanupFuture.whenComplete { _, _ ->
+                stopTracking(tracker)
+            }
+        }
+    }
+
+    protected abstract fun cleanup0(): CompletableFuture<Unit>?
+
+    fun cleanupAsync(): CompletableFuture<Unit> {
+        if (!created.load()) throw IllegalStateException("Resource was never tracked")
+        if (calledCleanup.compareAndSet(expectedValue = false, newValue = true)) {
+            if (tracker.enabled) {
+                val thread = currentThread
+                cleanupStack = thread.stackTrace
+                cleanupThreadName = thread.name
+            }
+            val f = try {
+                cleanup0()
+            } catch (ex: Throwable) {
+                stopTracking(tracker)
+                cleanupFuture.completeExceptionally(ex)
+                return cleanupFuture
+            }
+            if (f == null) {
+                stopTracking(tracker)
+                cleanupFuture.complete(Unit)
+            } else {
+                f.whenComplete { _, t ->
+                    stopTracking(tracker)
+                    if (t != null) cleanupFuture.completeExceptionally(t)
+                    else cleanupFuture.complete(Unit)
+                }
+            }
+        } else {
+            val ex = GameException("Multiple cleanups")
+            if (tracker.enabled) {
+                val creation = GameException("CreationStack: $creationThreadName")
+                creation.stackTrace = creationStack!!
+                val cleanup = GameException("CleanupStack: $cleanupThreadName")
+                cleanup.stackTrace = cleanupStack!!
+                ex.addSuppressed(creation)
+                ex.addSuppressed(cleanup)
+            }
+            stopTracking(tracker) // Stop tracking, we already printed to console
+            return CompletableFuture<Unit>().also { it.completeExceptionally(ex) }
+        }
+        return cleanupFuture
+    }
+}

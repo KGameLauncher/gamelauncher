@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.window
 
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 
 interface WindowBuilder {
     fun initialPosition(x: Int, y: Int)

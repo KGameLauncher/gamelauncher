@@ -1,16 +1,17 @@
 package de.dasbabypixel.gamelauncher.impl
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThreadTask
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.create
 import de.dasbabypixel.gamelauncher.impl.window.WindowSystem
+import de.dasbabypixel.gamelauncher.service.ServiceRegistry
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
 
-class StartupThread(thread: Thread) : AbstractThreadTask(ResourceTracker.global, thread) {
+class StartupThread(
+    val serviceRegistry: ServiceRegistry, thread: Thread
+) : AbstractThreadTask(serviceRegistry.singleInstance(), serviceRegistry.singleInstance(), thread) {
     val selectedWindowSystem = CompletableFuture<WindowSystem>()
     override fun run0() {
-        DesktopInitializer.init(this)
+        DesktopInitializer(serviceRegistry).init(this)
 
         stopTracking()
     }
@@ -20,8 +21,15 @@ class StartupThread(thread: Thread) : AbstractThreadTask(ResourceTracker.global,
     }
 
     companion object {
-        fun create(): StartupThread {
-            return Thread.create("StartupThread", ::StartupThread).also { thread ->
+        fun create(
+            serviceRegistry: ServiceRegistry
+        ): StartupThread {
+            return Thread.create(
+                "StartupThread", taskFactory = { thread ->
+                    StartupThread(
+                        serviceRegistry, thread
+                    )
+                }).also { thread ->
                 thread.start()
             }
         }

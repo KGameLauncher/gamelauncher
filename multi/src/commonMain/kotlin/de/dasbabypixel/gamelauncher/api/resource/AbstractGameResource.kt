@@ -32,11 +32,12 @@ abstract class AbstractGameResource : GameResource.StackCapable {
         get() = cleanupFuture.isDone
     final override val cleanupFuture: CompletableFuture<Unit> = CompletableFuture()
 
-    open val autoTrack
-        get() = true
+    val autoTrack: Boolean
 
-    constructor(tracker: ResourceTracker) {
+    constructor(tracker: ResourceTracker) : this(tracker, true)
+    constructor(tracker: ResourceTracker, autoTrack: Boolean) {
         this.tracker = tracker
+        this.autoTrack = autoTrack
 
         if (this.autoTrack) {
             track(dropStack = 2u)
@@ -46,8 +47,10 @@ abstract class AbstractGameResource : GameResource.StackCapable {
     fun stopTracking() = stopTracking(tracker)
 
     protected fun track(thread: Thread? = null, dropStack: UInt = 0u) {
-        if (!created.compareAndSet(expectedValue = false,
-                newValue = true)
+        if (!created.compareAndSet(
+                expectedValue = false,
+                newValue = true
+            )
         ) throw IllegalStateException("Already tracked")
         if (tracker.enabled) {
             val thread = thread ?: currentThread

@@ -1,10 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.math.clamp
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.math.Vec2i
+import de.dasbabypixel.gamelauncher.util.math.clamp
+import de.dasbabypixel.gamelauncher.util.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurfaceFormatKHR
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSwapChain
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkImage

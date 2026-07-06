@@ -1,13 +1,15 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
+import de.dasbabypixel.gamelauncher.api.GameLauncher
 import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
-import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.util.math.Vec2i
+import de.dasbabypixel.gamelauncher.util.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSurface
 import de.dasbabypixel.gamelauncher.impl.window.Window
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
+import de.dasbabypixel.gamelauncher.logging.getLogger
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
 import de.dasbabypixel.gamelauncher.util.GameException
 import de.dasbabypixel.gamelauncher.util.function.GameFunction
@@ -22,7 +24,8 @@ import kotlin.concurrent.Volatile
 
 class GLFWWindow(
     val system: GLFWWindowSystem,
-    serviceRegistry: ServiceRegistry,
+    loggingInstance: LoggingInstance,
+    val serviceRegistry: ServiceRegistry,
     id: Int,
     tracker: ResourceTracker,
     private val handle: Long,
@@ -31,6 +34,7 @@ class GLFWWindow(
     maximized: Boolean,
     override val surface: VulkanSurface
 ) : AbstractGameResource(tracker), Window {
+    private val logger by getLogger(loggingInstance)
     private var valid: Boolean = true
     private val callbacks: List<CB<*>> = callbackTypes.map { CB(it) }
     private var iconified: Boolean = iconified
@@ -40,7 +44,8 @@ class GLFWWindow(
     @Volatile
     var framebufferSize: Vec2i = framebufferSize
         private set
-    val renderThread: GLFWRenderThread = GLFWRenderThread.create(tracker, serviceRegistry, this)
+    val renderThread: GLFWRenderThread =
+        GLFWRenderThread.create(loggingInstance, tracker, serviceRegistry, this)
 
     private class CB<T>(val type: CBType<T>, var value: T? = null) {
         fun create(window: GLFWWindow) {
@@ -74,11 +79,13 @@ class GLFWWindow(
     @Volatile
     private var visible: Boolean = false
     override fun cleanup0(): CompletableFuture<Unit> {
+        println("Begin cleanup window")
         return renderThread.cleanupAsync()
             .thenCompose { surface.cleanupAsync() }
             .thenComposeAsync(ForkJoinPool.commonPool()) {
                 submit {
                     GLFW.glfwDestroyWindow(handle)
+                    println("Post glfw destroy window")
                     callbacks.forEach { it.free() }
                     system.windows.remove(this)
                     valid = false
@@ -117,43 +124,48 @@ class GLFWWindow(
     }
 
     companion object {
-        private val logger by getLogger()
         private val callbackTypes: MutableList<CBType<*>> = ArrayList()
 
         init {
             windowCB(GLFW::glfwSetWindowMaximizeCallback) { window ->
                 GLFWWindowMaximizeCallback.create { _, maximized ->
-                    logger.debug("Maximized status for {} changed from {} to {}",
+                    window.logger.debug(
+                        "Maximized status for {} changed from {} to {}",
                         window.identifier,
                         window.maximized,
-                        maximized)
+                        maximized
+                    )
                     window.maximized = maximized
                 }
             }
             windowCB(GLFW::glfwSetWindowCloseCallback) { window ->
                 GLFWWindowCloseCallback.create {
-                    logger.debug("User requested close for {}", window.identifier)
+                    window.logger.debug("User requested close for {}", window.identifier)
 
-                    ShutdownHandler.shutdownGracefully()
+                    window.serviceRegistry.singleInstance<GameLauncher>().shutdownGracefully()
                 }
             }
             windowCB(GLFW::glfwSetWindowIconifyCallback) { window ->
                 GLFWWindowIconifyCallback.create { _, iconified ->
-                    logger.debug("Iconified status for {} changed from {} to {}",
+                    window.logger.debug(
+                        "Iconified status for {} changed from {} to {}",
                         window.identifier,
                         window.iconified,
-                        iconified)
+                        iconified
+                    )
                     window.iconified = iconified
                 }
             }
             windowCB(GLFW::glfwSetFramebufferSizeCallback) { window ->
                 GLFWFramebufferSizeCallback.create { _, width, height ->
-                    logger.debug("Framebuffer size for {} changed from {}x{} to {}x{}",
+                    window.logger.debug(
+                        "Framebuffer size for {} changed from {}x{} to {}x{}",
                         window.identifier,
                         window.framebufferSize.x,
                         window.framebufferSize.y,
                         width,
-                        height)
+                        height
+                    )
                     window.framebufferSize = Vec2i(width, height)
                     window.renderThread.framebufferResized()
                 }

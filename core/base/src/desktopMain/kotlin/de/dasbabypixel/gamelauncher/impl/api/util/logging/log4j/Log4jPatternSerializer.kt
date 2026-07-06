@@ -1,18 +1,15 @@
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_DEBUG
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_ERROR
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_FATAL
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_INFO
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_TRACE
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_UNKNOWN
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_WARN
-import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult
-import de.dasbabypixel.gamelauncher.api.util.logging.PatternException
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.LogUse
+import de.dasbabypixel.gamelauncher.logging.CustomPattern
+import de.dasbabypixel.gamelauncher.logging.CustomPatterns
+import de.dasbabypixel.gamelauncher.logging.JvmLogging
+import de.dasbabypixel.gamelauncher.logging.ParseResult
+import de.dasbabypixel.gamelauncher.logging.PatternException
 
-object Log4jPatternSerializer {
+class Log4jPatternSerializer(
+    patternPlatformProvider: CustomPattern.PlatformProvider, customPatterns: CustomPatterns
+) {
     private val serializers = HashMap<String, Serializer>()
 
     init {
@@ -20,7 +17,7 @@ object Log4jPatternSerializer {
         serializers["n_level"] = Serializer.Level
         serializers["n_logger"] = Serializer.Logger
         serializers["n_thread"] = Serializer.Thread
-        serializers["n_highlight"] = Serializer.Highlight
+        serializers["n_highlight"] = Serializer.Highlight(customPatterns)
         serializers["n_exception"] = Serializer.Exception
         serializers["n_marker"] = Serializer.Marker
         serializers["n_location"] = Serializer.Location
@@ -30,7 +27,7 @@ object Log4jPatternSerializer {
 
         var missing = false
 
-        Log4jPatternPlatformProvider.patternNames.forEach {
+        patternPlatformProvider.patternNames.forEach {
             if (!serializers.containsKey(it)) {
                 JvmLogging.out.println("Missing pattern $it")
                 missing = true
@@ -50,7 +47,7 @@ object Log4jPatternSerializer {
 
     class Context(val logUse: LogUse)
 
-    private class State(val context: Context) {
+    private inner class State(val context: Context) {
         private val styles = ArrayList<Styles>()
         val builder = StringBuilder()
         val textBuilder = StringBuilder()
@@ -196,23 +193,24 @@ object Log4jPatternSerializer {
             }
         }
 
-        data object Highlight : Serializer {
+        class Highlight(val customPatterns: CustomPatterns) : Serializer {
             private val colors: Map<String, String> = mapOf(
-                "FATAL" to C_FATAL,
-                "ERROR" to C_ERROR,
-                "WARN" to C_WARN,
-                "INFO" to C_INFO,
-                "DEBUG" to C_DEBUG,
-                "TRACE" to C_TRACE,
+                "FATAL" to customPatterns.colorFatal,
+                "ERROR" to customPatterns.colorError,
+                "WARN" to customPatterns.colorWarn,
+                "INFO" to customPatterns.colorInfo,
+                "DEBUG" to customPatterns.colorDebug,
+                "TRACE" to customPatterns.colorTrace,
             )
 
-            private val format = org.apache.logging.log4j.Level.values()
-                .joinToString(", ") { it.name() + "=" + (colors[it.name()] ?: C_UNKNOWN) }
+            private val format = org.apache.logging.log4j.Level.values().joinToString(", ") {
+                it.name() + "=" + (colors[it.name()] ?: customPatterns.colorUnknown)
+            }
 
             override fun serialize(state: State, format: ParseResult.Formatted) {
                 val content = format.assertContentNotNull()
                 format.assertOptionsNull()
-                state.pushStyle(Styles.Highlight(Highlight.format))
+                state.pushStyle(Styles.Highlight(this.format))
                 state.serialize(content)
                 state.popStyle()
             }

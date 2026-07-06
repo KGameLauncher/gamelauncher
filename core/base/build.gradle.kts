@@ -30,7 +30,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.core.serviceLoader)
+            api(projects.core.logging)
             api(projects.core.util)
+            api(projects.core.graphics)
         }
         val jvmCommon by registering {
             dependsOn(commonMain.get())

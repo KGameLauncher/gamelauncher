@@ -1,26 +1,32 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.math.Vec2i
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanAccess
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
 import de.dasbabypixel.gamelauncher.util.GameException
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWVulkan
 import org.lwjgl.system.MemoryStack
 
-class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
+class GLFWWindowBuilder(
+    val tracker: ResourceTracker,
+    val loggingInstance: LoggingInstance,
+    val serviceRegistry: ServiceRegistry,
+    val system: GLFWWindowSystem
+) :
+    WindowBuilder {
     private var initialX: Int = Int.MIN_VALUE
     private var initialY: Int = Int.MIN_VALUE
     private var initialWidth: Int = 400
     private var initialHeight: Int = 400
     private var title: String = "Unnamed Window"
     private var resizable: Boolean = true
-    private val serviceRegistry: ServiceRegistry = ServiceRegistry.global
 
     override fun initialPosition(x: Int, y: Int) {
         initialX = x
@@ -50,14 +56,14 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
         val handle = GLFW.glfwCreateWindow(initialWidth, initialHeight, title, 0L, 0L)
         if (handle == 0L) throw GameException("Failed to create window")
 
-        val tracker = ResourceTracker.global
-
         val surface = VulkanAccess.instance.createSurface { stack, instance ->
             val pSurface = stack.mallocLong(1)
-            GLFWVulkan.glfwCreateWindowSurface(instance.instance,
+            GLFWVulkan.glfwCreateWindowSurface(
+                instance.instance,
                 handle,
                 instance.pAllocator,
-                pSurface).vkValidate()
+                pSurface
+            ).vkValidate()
             pSurface.get(0)
         }
         val id = system.nextId()
@@ -70,7 +76,8 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
             GLFW.glfwGetFramebufferSize(handle, pWidth, pHeight)
             Vec2i(pWidth.get(0), pHeight.get(0))
         }
-        return GLFWWindow(system,
+        return GLFWWindow(
+            system, loggingInstance,
             serviceRegistry,
             id,
             tracker,
@@ -78,7 +85,8 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
             framebufferSize,
             iconified,
             maximized,
-            surface).also {
+            surface
+        ).also {
             system.windows.add(it)
         }
     }

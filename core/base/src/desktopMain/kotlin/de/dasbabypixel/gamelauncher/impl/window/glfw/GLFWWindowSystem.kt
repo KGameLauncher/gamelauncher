@@ -1,19 +1,26 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.allComplete
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
 import de.dasbabypixel.gamelauncher.impl.window.WindowSystem
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.service.ServiceRegistry
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.allComplete
+import de.dasbabypixel.gamelauncher.util.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
 
-class GLFWWindowSystem : AbstractGameResource(ResourceTracker.global), WindowSystem {
-    private val logger by getLogger()
+class GLFWWindowSystem(
+    tracker: ResourceTracker,
+    val loggingInstance: LoggingInstance,
+    val serviceRegistry: ServiceRegistry
+) :
+    AbstractGameResource(tracker), WindowSystem {
+    private val logger by getLogger(loggingInstance)
     private var id: Int = 0
     val windows: MutableSet<GLFWWindow> = HashSet()
     override fun createWindow(): WindowBuilder {
-        return GLFWWindowBuilder(this)
+        return GLFWWindowBuilder(tracker, loggingInstance, serviceRegistry, this)
     }
 
     override fun init() {
@@ -29,10 +36,11 @@ class GLFWWindowSystem : AbstractGameResource(ResourceTracker.global), WindowSys
     }
 
     override fun takeOverInitialThread() {
-        GLFWThread.takeOverByGLFW()
+        GLFWThread.takeOverByGLFW(loggingInstance, tracker, serviceRegistry)
     }
 
     override fun cleanup0(): CompletableFuture<Unit> {
+        println("Cleaning up ${windows.size} windows")
         return windows.map { window ->
             window.cleanupAsync()
         }.allComplete().thenCompose {

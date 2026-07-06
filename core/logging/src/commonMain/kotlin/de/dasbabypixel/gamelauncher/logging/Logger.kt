@@ -1,6 +1,7 @@
 package de.dasbabypixel.gamelauncher.logging
 
 interface Logger {
+    val loggingInstance: LoggingInstance
     val name: String
 
     fun debug(msg: String)
@@ -46,4 +47,9 @@ interface Logger {
     fun error(marker: Marker, format: String, arg1: Any?, arg2: Any?)
     fun error(marker: Marker, format: String, vararg arguments: Any?)
     fun error(marker: Marker, msg: String, t: Throwable)
+
+    fun withDefaultMarker(marker: String): Logger =
+        loggingInstance.withDefaultMarker(this, loggingInstance.getMarker(marker))
+
+    fun withDefaultMarker(marker: Marker): Logger = loggingInstance.withDefaultMarker(this, marker)
 }

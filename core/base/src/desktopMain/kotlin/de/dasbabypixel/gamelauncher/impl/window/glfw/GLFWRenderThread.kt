@@ -1,11 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.allComplete
-import de.dasbabypixel.gamelauncher.api.util.concurrent.create
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanCommandBuffer
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanCommandPool
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanGraphicsPipeline
@@ -16,7 +11,11 @@ import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKFence
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSemaphore
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkResult
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.allComplete
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.KHRSwapchain
 import org.lwjgl.vulkan.VK10
@@ -25,11 +24,18 @@ import org.lwjgl.vulkan.VkSubmitInfo
 import kotlin.concurrent.Volatile
 
 class GLFWRenderThread(
+    loggingInstance: LoggingInstance,
     tracker: ResourceTracker,
     serviceRegistry: ServiceRegistry,
     thread: Thread,
     val window: GLFWWindow
-) : AbstractExecutorThread(tracker, serviceRegistry, thread, customAwaitingSystem = true) {
+) : AbstractExecutorThread(
+    loggingInstance,
+    tracker,
+    serviceRegistry,
+    thread,
+    customAwaitingSystem = true
+) {
     private val maxFramesInFlight: Int = 1
     private lateinit var swapChain: VulkanSwapChain
     private lateinit var device: VulkanLogicalDevice
@@ -54,10 +60,12 @@ class GLFWRenderThread(
         device = window.surface.logicalDevice
         swapChain = VulkanSwapChain.create(tracker, window.surface, window.framebufferSize)
         imageViews = VulkanImageViews.create(tracker, swapChain)
-        graphicsPipeline = VulkanGraphicsPipeline.create(tracker,
+        graphicsPipeline = VulkanGraphicsPipeline.create(
+            tracker,
             device,
             swapChain.extent,
-            swapChain.surfaceFormat)
+            swapChain.surfaceFormat
+        )
         commandPool = VulkanCommandPool.create(tracker, device, graphicsPipeline)
         commandBuffers = List(maxFramesInFlight) {
             VulkanCommandBuffer.create(tracker, commandPool)
@@ -87,18 +95,18 @@ class GLFWRenderThread(
             logger.debug("Skipping frame, swapChain invalid")
             return
         }
-        println("Draw frame")
         MemoryStack.stackPush().use { stack ->
 
             val pImageIndex = stack.mallocInt(1)
-            KHRSwapchain.vkAcquireNextImageKHR(device.device.device,
+            KHRSwapchain.vkAcquireNextImageKHR(
+                device.device.device,
                 swapChain.swapChain.handle,
                 -1,
                 presentCompleteSemaphores[frameIndex].handle,
                 0L,
-                pImageIndex).let { result: VkResult ->
+                pImageIndex
+            ).let { result: VkResult ->
                 if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
-                    println("Out of date")
                     recreateSwapChain()
                     return
                 } else if (result != KHRSwapchain.VK_SUBOPTIMAL_KHR) result.vkValidate()
@@ -120,9 +128,11 @@ class GLFWRenderThread(
                 .pCommandBuffers(stack.pointers(commandBuffers[frameIndex].commandBuffer.handle))
                 .pSignalSemaphores(stack.longs(submitSemaphores[imageIndex].handle))
 
-            VK10.vkQueueSubmit(device.graphicsQueue.queue,
+            VK10.vkQueueSubmit(
+                device.graphicsQueue.queue,
                 submitInfo,
-                inFlightFences[frameIndex].handle).vkValidate()
+                inFlightFences[frameIndex].handle
+            ).vkValidate()
 
             val presentInfo = VkPresentInfoKHR.calloc(stack)
                 .`sType$Default`()
@@ -134,7 +144,6 @@ class GLFWRenderThread(
                 .let { result: VkResult ->
                     if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR || result == KHRSwapchain.VK_SUBOPTIMAL_KHR || framebufferResized) {
                         framebufferResized = false
-                        println("Out of date or suboptimal")
                         recreateSwapChain()
                     } else result.vkValidate()
                 }
@@ -168,9 +177,11 @@ class GLFWRenderThread(
             }
             return
         } else if (!swapChainValid) {
-            logger.debug("Framebuffer size {}x{}, resuming rendering",
+            logger.debug(
+                "Framebuffer size {}x{}, resuming rendering",
                 framebufferSize.x,
-                framebufferSize.y)
+                framebufferSize.y
+            )
         }
         swapChain = VulkanSwapChain.create(tracker, window.surface, framebufferSize)
         imageViews = VulkanImageViews.create(tracker, swapChain)
@@ -185,7 +196,8 @@ class GLFWRenderThread(
 
         val objects = inFlightFences + presentCompleteSemaphores + commandBuffers + listOf(
             commandPool,
-            graphicsPipeline)
+            graphicsPipeline
+        )
         objects.map { it.cleanupAsync() }.allComplete().resultNow()
         cleanupSwapChain()
     }
@@ -201,12 +213,21 @@ class GLFWRenderThread(
     override fun customSignal() = workSignal.signal()
 
     companion object {
-        private val logger by getLogger()
         fun create(
+            loggingInstance: LoggingInstance,
             tracker: ResourceTracker, serviceRegistry: ServiceRegistry, window: GLFWWindow
         ): GLFWRenderThread {
-            return Thread.create("RenderThread-" + window.identifier,
-                { thread -> GLFWRenderThread(tracker, serviceRegistry, thread, window) })
+            return Thread.create(
+                "RenderThread-" + window.identifier,
+                { thread ->
+                    GLFWRenderThread(
+                        loggingInstance,
+                        tracker,
+                        serviceRegistry,
+                        thread,
+                        window
+                    )
+                })
         }
     }
 }

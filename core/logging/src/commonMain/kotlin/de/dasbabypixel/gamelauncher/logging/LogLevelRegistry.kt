@@ -4,7 +4,7 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @OptIn(ExperimentalAtomicApi::class)
-class LogLevelRegistry(customPatterns: CustomPatterns) {
+class LogLevelRegistry(val customPatterns: CustomPatterns) {
     private val levels = ArrayList<LogType>()
     private val customLevels = HashMap<String, LogType.Fixed>()
 

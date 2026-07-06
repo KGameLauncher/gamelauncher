@@ -14,16 +14,19 @@ class CustomPattern(
             patternRegistry: PatternRegistry, pattern: CustomPattern, parse: ParseResult.Formatted
         ): ParseResult {
             if (parse.simplified) return parse
-            return ParseResult.Formatted(patternRegistry,
+            return ParseResult.Formatted(
+                patternRegistry,
                 parse.pattern,
                 parse.content?.simplify(),
-                parse.options?.simplify())
+                parse.options?.simplify()
+            )
         }
     }
 
     override fun toString(): String = "%$name"
 
     interface PlatformProvider {
+        val patternNames: Collection<String>
         fun pattern(name: String): CustomPattern
 
         fun isNative(name: String): Boolean

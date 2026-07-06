@@ -12,12 +12,24 @@ private object ExternalTaskFactory : ThreadTaskFactory {
     override fun createTask(thread: Thread): ThreadTask = ExternalTask(thread)
 }
 
+private object JvmTaskFactory : ThreadTaskFactory {
+    override fun createTask(thread: Thread): ThreadTask = JvmTask(thread)
+}
+
 private class ExternalTask(override val thread: Thread) :
     AbstractGameResource(disabledThreadTracker), ThreadTask {
     override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
 
     override fun run() = error("Can't run")
-    override fun start(internalStart: () -> Unit) = internalStart()
+    override fun start(internalStart: () -> Unit) = error("Can't start")
+}
+
+private class JvmTask(override val thread: Thread) :
+    AbstractGameResource(disabledThreadTracker, false), ThreadTask {
+    override fun cleanup0(): CompletableFuture<Unit> = error("Can't cleanup")
+
+    override fun run() = error("Can't run")
+    override fun start(internalStart: () -> Unit) = error("Can't start")
 }
 
 private val disabledThreadTracker = ResourceTracker(false)
@@ -37,7 +49,7 @@ fun JThread.configureThirdPartyThread(
 }
 
 fun JThread.configureThirdPartyThread(
-    threadTaskFactory: ThreadTaskFactory = ExternalTaskFactory, overwrite: Boolean = false
+    threadTaskFactory: ThreadTaskFactory = JvmTaskFactory, overwrite: Boolean = false
 ): Thread {
     if (!overwrite && currentThreadLocal.get() != null) throw IllegalStateException("Already configured")
     val t = ThreadImpl(this, threadTaskFactory)

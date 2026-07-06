@@ -144,6 +144,12 @@ sealed interface ParseResult {
     }
 }
 
+fun PatternRegistry.Formatted(
+    pattern: CustomPattern,
+    content: ParseResult? = null,
+    options: ParseResult? = null
+) = ParseResult.Formatted(this, pattern, content, options)
+
 private fun StringBuilder.indent(level: Int): StringBuilder {
     return append("  ".repeat(level))
 }

@@ -5,7 +5,10 @@ import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanInitializer
 import de.dasbabypixel.gamelauncher.impl.window.WindowSystems
 
 actual fun ShutdownHandler.shutdownGracefullyPlatform() {
-    WindowSystems.terminate()?.join()
+    println("Begin shutdown window systems")
+    gameLauncher.serviceRegistry.singleInstance<WindowSystems>().terminate()?.join()
+    println("Begin shutdown vulkan")
     VulkanInitializer.exit()
-    LWJGLLogging.exit()
+    println("Begin shutdown logging")
+    gameLauncher.serviceRegistry.singleInstance<LWJGLLogging>().exit()
 }

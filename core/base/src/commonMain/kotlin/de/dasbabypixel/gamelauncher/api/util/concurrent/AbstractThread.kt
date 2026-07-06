@@ -1,17 +1,17 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.ThreadTask
+import de.dasbabypixel.gamelauncher.util.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
 
-abstract class AbstractThreadTask(tracker: ResourceTracker, override val thread: Thread) :
-    AbstractGameResource(tracker), ThreadTask {
-    companion object {
-        private val logger by getLogger()
-    }
+abstract class AbstractThreadTask(
+    loggingInstance: LoggingInstance, tracker: ResourceTracker, override val thread: Thread
+) : AbstractGameResource(tracker, false), ThreadTask {
+    protected val logger by getLogger(loggingInstance)
 
-    override val autoTrack: Boolean
-        get() = false
     protected open val customStart: Boolean
         get() = false
 

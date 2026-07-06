@@ -1,6 +1,7 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
+import de.dasbabypixel.gamelauncher.logging.getLogger
 import org.lwjgl.glfw.GLFW.GLFW_CONNECTED
 import org.lwjgl.glfw.GLFW.GLFW_DISCONNECTED
 import org.lwjgl.glfw.GLFW.glfwGetMonitorContentScale
@@ -12,8 +13,8 @@ import org.lwjgl.glfw.GLFW.glfwSetMonitorCallback
 import org.lwjgl.glfw.GLFWMonitorCallback
 import java.util.concurrent.CopyOnWriteArrayList
 
-object GLFWMonitors {
-    private val logger by getLogger<GLFWMonitors>("LWJGL")
+class GLFWMonitors(loggingInstance: LoggingInstance) {
+    private val logger by getLogger<GLFWMonitors>(loggingInstance, "LWJGL")
     private val callback = object : GLFWMonitorCallback() {
         override fun invoke(monitor: Long, event: Int) {
             when (event) {
@@ -46,7 +47,8 @@ object GLFWMonitors {
         glfwGetMonitorContentScale(monitorId, sx, sy)
         val vidMode =
             glfwGetVideoMode(monitorId) ?: throw IllegalStateException("Monitor without VideoMode")
-        val monitor = GLFWMonitor(name,
+        val monitor = GLFWMonitor(
+            name,
             x[0],
             y[0],
             vidMode.width(),
@@ -54,7 +56,8 @@ object GLFWMonitors {
             sx[0],
             sy[0],
             monitorId,
-            VideoMode(vidMode.width(), vidMode.height(), vidMode.refreshRate()))
+            VideoMode(vidMode.width(), vidMode.height(), vidMode.refreshRate())
+        )
         monitors.add(monitor)
         logger.info("New monitor connected: {}", monitor)
     }

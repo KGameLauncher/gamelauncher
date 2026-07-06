@@ -1,7 +1,7 @@
 package de.dasbabypixel.gamelauncher.api.util
 
-import de.dasbabypixel.gamelauncher.api.util.concurrent.ConcurrentMap
-import de.dasbabypixel.gamelauncher.api.util.concurrent.concurrentHashMap
+import de.dasbabypixel.gamelauncher.util.concurrent.ConcurrentMap
+import de.dasbabypixel.gamelauncher.util.concurrent.concurrentHashMap
 
 object Config {
     private val config: ConcurrentMap<String, ConfigValue<out Any>> = concurrentHashMap()

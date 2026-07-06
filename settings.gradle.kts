@@ -41,7 +41,7 @@ include("core:service-loader")
 include("core:base")
 include("core:logging")
 include("core:graphics")
-include("multi")
+//include("multi")
 //include("executables")
 
 val ideaVendor: String? = System.getProperty("idea.vendor.name")

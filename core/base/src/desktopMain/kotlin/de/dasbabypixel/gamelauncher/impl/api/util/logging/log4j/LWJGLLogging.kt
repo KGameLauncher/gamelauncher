@@ -2,19 +2,19 @@
 
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.api.GameLauncher
 import de.dasbabypixel.gamelauncher.api.util.DesktopConfig
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThreadTask
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.create
-import de.dasbabypixel.gamelauncher.api.util.concurrent.sleep
 import de.dasbabypixel.gamelauncher.api.util.debug.Debug
-import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.LoggingPrintStream
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
-import de.dasbabypixel.gamelauncher.api.util.logging.withDefaultMarker
+import de.dasbabypixel.gamelauncher.impl.api.util.logging.DesktopLoggingInstance
+import de.dasbabypixel.gamelauncher.logging.JvmLogging
+import de.dasbabypixel.gamelauncher.logging.LogLevelRegistry
+import de.dasbabypixel.gamelauncher.logging.LoggingPrintStream
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.service.ServiceRegistry
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
@@ -28,16 +28,14 @@ import java.util.logging.Logger
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-object LWJGLLogging {
-
-    private val logger by getLogger()
+class LWJGLLogging(val tracker: ResourceTracker, val serviceRegistry: ServiceRegistry) {
+    val loggingInstance = DesktopLoggingInstance()
+    private val logger by getLogger(loggingInstance)
 
     init {
         Logger.getLogger("org.jline").level = Level.ALL
-    }
 
-    fun init() {
-        Log4jConfiguration.init()
+        JvmLogging.init()
     }
 
     private val console: Console? = System.console()
@@ -52,23 +50,22 @@ object LWJGLLogging {
             else system(true)
         }.encoding(console.charset()).build()
     } else {
-        TerminalBuilder.builder()
-            .dumb(true)
-            .system(true)
-            .exec(false)
-            .encoding(JvmLogging.out.charset())
-            .build()
+        TerminalBuilder.builder().dumb(true).system(true).exec(false)
+            .encoding(JvmLogging.out.charset()).build()
     }
 
     private val reader: LineReader
     private var requestExit = AtomicBoolean(false)
-    private var readerThread: Thread? = null
+    private var consoleTask: ConsoleTask? = null
+    private val logLevelRegistry = LogLevelRegistry(loggingInstance.customPatterns)
+    private val configuration =
+        Log4jConfiguration(logLevelRegistry, LWJGLLogLevels(logLevelRegistry), this)
 
     init {
         val useAnsi = DesktopConfig.useAnsi()
 
         reader = LineReaderBuilder.builder().appName("GameLauncher").terminal(terminal).build()
-        Log4jConfiguration.setup(useAnsi, reader)
+        configuration.setup(useAnsi, reader)
 
         reader.option(LineReader.Option.AUTO_GROUP, false)
         reader.option(LineReader.Option.AUTO_MENU_LIST, true)
@@ -83,57 +80,61 @@ object LWJGLLogging {
         reader.variable(LineReader.COMPLETION_STYLE_LIST_BACKGROUND, "inverse")
 
         if (Debug.debug) {
-            val stream = LoggingPrintStream(logger.withDefaultMarker("LWJGL"), printLocation = true)
+            val stream = LoggingPrintStream(logger.withDefaultMarker("LWJGL"))
             org.lwjgl.system.Configuration.DEBUG_STREAM.set(stream)
             if (APIUtil.DEBUG_STREAM != stream) error("Failed to inject debug logging into LWJGL")
         }
     }
 
     fun startReader() {
-        readerThread = Thread.create(name = "Console Thread", taskFactory = { thread ->
-            object : AbstractThreadTask(ResourceTracker.global, thread) {
-                val exitFuture = CompletableFuture<Unit>()
-                val exit = AtomicBoolean(false)
-                override fun run0() {
-                    try {
-                        while (!exit.load()) {
-                            try {
-                                if (requestExit.load()) throw UserInterruptException("")
-                                val prompt = if (Debug.inIde) null else "Prompt: "
-                                val line = reader.readLine(prompt)!!
-                                if (line == "exit") {
-                                    ShutdownHandler.shutdownGracefully()
-                                    continue
-                                }
-                                logger.info("Read $line")
-                            } catch (_: EndOfFileException) {
-                            } catch (_: UserInterruptException) {
-                                if (!exit.load()) {
-                                    JvmLogging.out.println("User interrupted")
-                                    Thread.sleep(1000)
-                                    ShutdownHandler.shutdownGracefully()
-                                }
-                            } catch (t: Throwable) {
-                                logger.error("Failed to read line, exiting", t)
-                                ShutdownHandler.shutdownByError(t)
-                            }
-                        }
-                    } finally {
-                        exitFuture.complete(Unit)
-                    }
-                }
-
-                override fun cleanup0(): CompletableFuture<Unit> {
-                    exit.store(true)
-                    thread.interrupt()
-                    return exitFuture
-                }
-            }
-        }).also { it.start() }.thread
+        consoleTask =
+            Thread.create(name = "Console Thread", taskFactory = ::ConsoleTask).also { it.start() }
     }
 
     fun exit() {
-        readerThread?.cleanupAsync()?.join()
-        Log4jConfiguration.exit()
+        consoleTask?.cleanupAsync()?.join()
+        configuration.exit()
+    }
+
+    inner class ConsoleTask(thread: Thread) : AbstractThreadTask(loggingInstance, tracker, thread) {
+        val exitFuture = CompletableFuture<Unit>()
+        val exit = AtomicBoolean(false)
+        override fun run0() {
+            try {
+                while (!exit.load()) {
+                    try {
+                        if (requestExit.compareAndSet(
+                                expectedValue = true, newValue = false
+                            )
+                        ) throw UserInterruptException("")
+                        val prompt = if (Debug.inIde) null else "Prompt: "
+                        val line = reader.readLine(prompt)!!
+                        if (line == "exit") {
+                            serviceRegistry.singleInstance<GameLauncher>().shutdownGracefully()
+                            continue
+                        }
+                        logger.info("Read $line")
+                    } catch (_: EndOfFileException) {
+                    } catch (_: UserInterruptException) {
+                        if (!exit.load()) {
+                            JvmLogging.out.println("User interrupted")
+                            serviceRegistry.singleInstance<GameLauncher>().shutdownGracefully()
+                            return
+                        }
+                    } catch (t: Throwable) {
+                        logger.error("Failed to read line, exiting", t)
+                        serviceRegistry.singleInstance<GameLauncher>().shutdownByError(t)
+                    }
+                }
+            } finally {
+                exitFuture.complete(Unit)
+            }
+        }
+
+        override fun cleanup0(): CompletableFuture<Unit> {
+            exit.store(true)
+            thread.interrupt()
+            return exitFuture
+        }
     }
 }

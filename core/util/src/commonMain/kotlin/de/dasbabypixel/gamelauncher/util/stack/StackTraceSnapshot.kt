@@ -1,7 +1,8 @@
 package de.dasbabypixel.gamelauncher.util.stack
 
-import de.dasbabypixel.gamelauncher.api.util.GameException
-import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
+import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.currentThread
 
 class StackTraceSnapshot(
     val stacktrace: StackTrace?, val cause: StackTraceSnapshot?, val thread: Thread

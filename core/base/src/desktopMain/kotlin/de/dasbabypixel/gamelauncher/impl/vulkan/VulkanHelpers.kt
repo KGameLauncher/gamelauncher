@@ -1,12 +1,13 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
+import de.dasbabypixel.gamelauncher.logging.getLogger
 import de.dasbabypixel.gamelauncher.util.GameException
 import org.lwjgl.PointerBuffer
 import org.lwjgl.system.MemoryStack
 
-object VKUtil {
-    private val logger by getVKLogger()
+class VKUtil(loggingInstance: LoggingInstance) {
+    private val logger by getVKLogger(loggingInstance)
     fun selectExtensions(
         type: String,
         availableExtensions: Set<String>,
@@ -34,7 +35,7 @@ object VKUtil {
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun Any.getVKLogger() = getLogger("Vulkan")
+inline fun Any.getVKLogger(loggingInstance: LoggingInstance) = getLogger(loggingInstance, "Vulkan")
 
 fun MemoryStack.UTF8Strings(strings: Collection<String>): PointerBuffer {
     return callocPointer(strings.size).apply {

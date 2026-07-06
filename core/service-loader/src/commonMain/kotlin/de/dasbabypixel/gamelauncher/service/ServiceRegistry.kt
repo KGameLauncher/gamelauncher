@@ -4,7 +4,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 @Suppress("UNCHECKED_CAST")
-class ServiceRegistry private constructor(
+class ServiceRegistry constructor(
     private val allowMutableRead: Boolean
 ) : ServiceRegistryLookup(ServiceContextLookup.ANY) {
 
@@ -12,6 +12,7 @@ class ServiceRegistry private constructor(
 
     private val servicesByCls: MutableMap<KClass<out Any>, MutableList<RegisteredService<out Any>>> =
         HashMap()
+    private val loadedServices
     private var frozen = false
 
     fun <Service : Any> register(
@@ -61,10 +62,6 @@ class ServiceRegistry private constructor(
 
         override fun <Service : Any> loaderFor(cls: KClass<Service>): ServiceLoader<Service> =
             loaderFor(cls, lookup)
-    }
-
-    companion object {
-        val global = ServiceRegistry(true)
     }
 }
 

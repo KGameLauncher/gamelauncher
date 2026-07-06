@@ -8,4 +8,5 @@ interface LoggingInstance {
     fun <T : Any> getLogger(cls: KClass<T>): Logger
     fun getMarker(marker: String): Marker
     fun withDefaultMarker(logger: Logger, marker: Marker): Logger
+
 }

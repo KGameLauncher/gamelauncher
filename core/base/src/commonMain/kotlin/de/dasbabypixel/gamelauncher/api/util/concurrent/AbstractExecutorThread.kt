@@ -1,23 +1,26 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.LoggingInstance
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.ExecutorThreadTask
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.currentThread
 import de.dasbabypixel.gamelauncher.util.function.GameCallable
+import de.dasbabypixel.gamelauncher.util.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.util.stack.StackTrace
 import de.dasbabypixel.gamelauncher.util.stack.StackTraceSnapshot
 import kotlin.concurrent.Volatile
 
 abstract class AbstractExecutorThread(
+    loggingInstance: LoggingInstance,
     tracker: ResourceTracker,
     serviceRegistry: ServiceRegistry,
     thread: Thread,
     private val customAwaitingSystem: Boolean = false
-) : AbstractThreadTask(tracker, thread), StackTraceSnapshot.CauseContainer, ExecutorThreadTask {
-    companion object {
-        private val logger by getLogger()
-    }
+) : AbstractThreadTask(loggingInstance, tracker, thread), StackTraceSnapshot.CauseContainer,
+    ExecutorThreadTask {
 
     final override var cause: StackTraceSnapshot? = null
     private val mpsc: MPSC<QueueEntry<in Any>> =

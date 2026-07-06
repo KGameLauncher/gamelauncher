@@ -3,7 +3,7 @@ package de.dasbabypixel.gamelauncher.logging
 import de.dasbabypixel.gamelauncher.util.Color
 
 @Suppress("MemberVisibilityCanBePrivate", "unused")
-class CustomPatterns(patternRegistry: PatternRegistry) {
+class CustomPatterns(val patternRegistry: PatternRegistry) {
     val colorTrace = Color(255, 0, 255).styleHex
     val colorDebug = Color(150, 150, 150).styleHex
     val colorInfo = Color(234, 218, 228).styleHex
@@ -19,32 +19,34 @@ class CustomPatterns(patternRegistry: PatternRegistry) {
     val colorGray = Color(100, 100, 100).styleHex
     val colorUnknown = Color(216, 0, 216).styleHex
 
-    val style = patternRegistry.pattern("style")
-    val time = patternRegistry.pattern("time")
-    val level = patternRegistry.pattern("level")
-    val logger = patternRegistry.pattern("logger")
-    val thread = patternRegistry.pattern("thread")
-    val highlight = patternRegistry.pattern("highlight")
-    val exception = patternRegistry.pattern("exception")
-    val marker = patternRegistry.pattern("marker")
-    val gray = patternRegistry.pattern("gray")
-    val sb = patternRegistry.pattern("sb")
-    val msg = patternRegistry.pattern("msg")
-    val lsb = patternRegistry.pattern("lsb")
-    val rsb = patternRegistry.pattern("rsb")
-    val location = patternRegistry.pattern("location")
-    val newline = patternRegistry.pattern("n")
-    val nativeMsg = patternRegistry.pattern("n_msg")
-    val nativeHighlight = patternRegistry.pattern("n_highlight")
-    val nativeTime = patternRegistry.pattern("n_time")
-    val nativeLevel = patternRegistry.pattern("n_level")
-    val nativeLogger = patternRegistry.pattern("n_logger")
-    val nativeThread = patternRegistry.pattern("n_thread")
-    val nativeException = patternRegistry.pattern("n_exception")
-    val nativeMarker = patternRegistry.pattern("n_marker")
-    val nativeLocation = patternRegistry.pattern("n_location")
+    private fun pattern(type: String) = lazy { patternRegistry.pattern(type) }
 
-    val builtin = Builtin()
+    val style by pattern("style")
+    val time by pattern("time")
+    val level by pattern("level")
+    val logger by pattern("logger")
+    val thread by pattern("thread")
+    val highlight by pattern("highlight")
+    val exception by pattern("exception")
+    val marker by pattern("marker")
+    val gray by pattern("gray")
+    val sb by pattern("sb")
+    val msg by pattern("msg")
+    val lsb by pattern("lsb")
+    val rsb by pattern("rsb")
+    val location by pattern("location")
+    val newline by pattern("n")
+    val nativeMsg by pattern("n_msg")
+    val nativeHighlight by pattern("n_highlight")
+    val nativeTime by pattern("n_time")
+    val nativeLevel by pattern("n_level")
+    val nativeLogger by pattern("n_logger")
+    val nativeThread by pattern("n_thread")
+    val nativeException by pattern("n_exception")
+    val nativeMarker by pattern("n_marker")
+    val nativeLocation by pattern("n_location")
+
+    val builtin by lazy { Builtin() }
 
     inner class Builtin {
         // Used for all loggers by default

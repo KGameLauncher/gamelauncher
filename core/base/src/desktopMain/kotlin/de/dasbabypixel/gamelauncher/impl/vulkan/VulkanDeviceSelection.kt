@@ -14,13 +14,15 @@ import org.lwjgl.vulkan.VkPhysicalDeviceFeatures
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties
 import org.lwjgl.vulkan.VkQueueFamilyProperties
 
-object VulkanDeviceSelection {
+class VulkanDeviceSelection(vkInstance: VKInstance) {
     private val requiredDeviceExtensions =
         mutableSetOf(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
     private val optionalDeviceExtensions =
-        mutableSetOf(KHRPortabilitySubset.VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
-            KHRSwapchainMaintenance1.VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME)
-    private val logger by getVKLogger()
+        mutableSetOf(
+            KHRPortabilitySubset.VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+            KHRSwapchainMaintenance1.VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME
+        )
+    private val logger by getVKLogger(vkInstance.loggingInstance)
 
     private fun VkQueueFamilyProperties.supportsGraphics(): Boolean {
         return (queueFlags() and VK10.VK_QUEUE_GRAPHICS_BIT) == VK10.VK_QUEUE_GRAPHICS_BIT
@@ -31,10 +33,12 @@ object VulkanDeviceSelection {
     ): Boolean {
         if (!supportsGraphics()) return false
         val pSupported = MemoryUtil.memAllocInt(1)
-        KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR(device.device,
+        KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR(
+            device.device,
             queueFamilyIndex,
             surface.handle,
-            pSupported).vkValidate()
+            pSupported
+        ).vkValidate()
         return pSupported.get(0) == VK10.VK_TRUE
     }
 
@@ -53,8 +57,6 @@ object VulkanDeviceSelection {
 
                 val availableExtensions = device.getExtensions(stack).map {
                     it.extensionNameString()
-                }.sorted().onEach {
-                    println(it)
                 }.toSet()
                 val missingExtensions = mutableSetOf<String>()
                 missingExtensions.addAll(requiredDeviceExtensions)
@@ -64,10 +66,12 @@ object VulkanDeviceSelection {
                     return@use null
                 }
 
-                val selectedExtensions = VKUtil.selectExtensions("device",
+                val selectedExtensions = vkInstance.VKUtil.selectExtensions(
+                    "device",
                     availableExtensions,
                     requiredDeviceExtensions,
-                    optionalDeviceExtensions)
+                    optionalDeviceExtensions
+                )
                 optionalDeviceExtensions.minus(selectedExtensions).forEach {
                     logger.debug("Missing optional device extension {}", it)
                 }
