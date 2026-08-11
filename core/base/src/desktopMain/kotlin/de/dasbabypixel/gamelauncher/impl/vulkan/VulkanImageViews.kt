@@ -1,10 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.allComplete
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKImageView
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.allComplete
 
 class VulkanImageViews(tracker: ResourceTracker, val swapChainImageViews: List<VKImageView>) :
     AbstractGameResource(tracker) {

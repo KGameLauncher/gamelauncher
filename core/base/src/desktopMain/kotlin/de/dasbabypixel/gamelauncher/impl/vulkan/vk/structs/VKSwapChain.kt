@@ -1,9 +1,9 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.KHRSurface
 import org.lwjgl.vulkan.KHRSwapchain
@@ -53,10 +53,8 @@ class VKSwapChain(
 
 
                 val pSwapChain = stack.mallocLong(1)
-                KHRSwapchain.vkCreateSwapchainKHR(device.device,
-                    swapChainCreateInfo,
-                    device.pAllocator,
-                    pSwapChain).vkValidate()
+                KHRSwapchain.vkCreateSwapchainKHR(device.device, swapChainCreateInfo, device.pAllocator, pSwapChain)
+                    .vkValidate()
                 val handle = pSwapChain.get(0)
                 VKSwapChain(device, handle, extent, surfaceFormat, tracker)
             }

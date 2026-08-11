@@ -3,7 +3,7 @@ package de.dasbabypixel.gamelauncher.logging
 import de.dasbabypixel.gamelauncher.util.Color
 
 @Suppress("MemberVisibilityCanBePrivate", "unused")
-class CustomPatterns(patternRegistry: PatternRegistry) {
+class CustomPatterns(val patternRegistry: PatternRegistry) {
     val colorTrace = Color(255, 0, 255).styleHex
     val colorDebug = Color(150, 150, 150).styleHex
     val colorInfo = Color(234, 218, 228).styleHex
@@ -54,15 +54,12 @@ class CustomPatterns(patternRegistry: PatternRegistry) {
         val defaultCustomPattern = "$time $level $marker $logger $thread: $msg$newline$exception"
 
         // Used for LoggingPrintStream
-        val defaultPatternPrintWithLocation =
-            "$time $logger $thread $location: $msg$newline$exception"
+        val defaultPatternPrintWithLocation = "$time $logger $thread $location: $msg$newline$exception"
         val defaultPatternPrintWithoutLocation = "$time $logger $thread: $msg$newline$exception"
 
         // Used for LoggingPrintStream with Markers
-        val defaultPatternPrintMarkerWithLocation =
-            "$time $marker $logger $thread $location: $msg$newline$exception"
-        val defaultPatternPrintMarkerWithoutLocation =
-            "$time $marker $logger $thread: $msg$newline$exception"
+        val defaultPatternPrintMarkerWithLocation = "$time $marker $logger $thread $location: $msg$newline$exception"
+        val defaultPatternPrintMarkerWithoutLocation = "$time $marker $logger $thread: $msg$newline$exception"
 
         // Used for stdout
         val defaultStdoutPattern =

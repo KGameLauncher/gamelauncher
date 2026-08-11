@@ -1,11 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThreadTask
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.create
 import de.dasbabypixel.gamelauncher.impl.window.WindowSystem
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 
 class StartupThread(thread: Thread) : AbstractThreadTask(ResourceTracker.global, thread) {
     val selectedWindowSystem = CompletableFuture<WindowSystem>()

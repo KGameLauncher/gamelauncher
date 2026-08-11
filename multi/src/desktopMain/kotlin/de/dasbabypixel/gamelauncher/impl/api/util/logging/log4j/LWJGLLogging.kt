@@ -3,18 +3,16 @@
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
 import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.DesktopConfig
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThreadTask
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.create
-import de.dasbabypixel.gamelauncher.api.util.concurrent.sleep
 import de.dasbabypixel.gamelauncher.api.util.debug.Debug
 import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
 import de.dasbabypixel.gamelauncher.api.util.logging.LoggingPrintStream
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.api.util.logging.withDefaultMarker
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
@@ -52,12 +50,7 @@ object LWJGLLogging {
             else system(true)
         }.encoding(console.charset()).build()
     } else {
-        TerminalBuilder.builder()
-            .dumb(true)
-            .system(true)
-            .exec(false)
-            .encoding(JvmLogging.out.charset())
-            .build()
+        TerminalBuilder.builder().dumb(true).system(true).exec(false).encoding(JvmLogging.out.charset()).build()
     }
 
     private val reader: LineReader

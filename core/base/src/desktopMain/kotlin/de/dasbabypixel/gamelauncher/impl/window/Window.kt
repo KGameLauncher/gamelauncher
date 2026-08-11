@@ -1,8 +1,8 @@
 package de.dasbabypixel.gamelauncher.impl.window
 
-import de.dasbabypixel.gamelauncher.api.resource.GameResource
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSurface
+import de.dasbabypixel.gamelauncher.resource.GameResource
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 
 interface Window : GameResource {
     val surface: VulkanSurface

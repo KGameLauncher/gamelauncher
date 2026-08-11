@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.api.util.concurrent
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.buildStackTrace
 import de.dasbabypixel.gamelauncher.api.util.stack.StackTrace
 import java.util.*

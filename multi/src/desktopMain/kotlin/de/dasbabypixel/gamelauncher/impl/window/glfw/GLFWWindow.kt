@@ -2,8 +2,8 @@ package de.dasbabypixel.gamelauncher.impl.window.glfw
 
 import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
 import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.api.util.function.GameFunction

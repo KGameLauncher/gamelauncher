@@ -1,15 +1,15 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.math.clamp
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurfaceFormatKHR
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSwapChain
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkImage
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkSurfaceTransformFlagBitsKHR
+import de.dasbabypixel.gamelauncher.math.Vec2i
+import de.dasbabypixel.gamelauncher.math.clamp
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.KHRSurface
 import org.lwjgl.vulkan.KHRSwapchain
@@ -21,10 +21,7 @@ import java.nio.IntBuffer
 import kotlin.math.max
 
 class VulkanSwapChain(
-    tracker: ResourceTracker,
-    val swapChain: VKSwapChain,
-    val surface: VulkanSurface,
-    val device: VulkanLogicalDevice
+    tracker: ResourceTracker, val swapChain: VKSwapChain, val surface: VulkanSurface, val device: VulkanLogicalDevice
 ) : AbstractGameResource(tracker) {
     val images: List<Image>
     val extent: Vec2i
@@ -33,15 +30,10 @@ class VulkanSwapChain(
     init {
         MemoryStack.stackPush().use { stack ->
             val pCount = stack.mallocInt(1)
-            KHRSwapchain.vkGetSwapchainImagesKHR(swapChain.device.device,
-                swapChain.handle,
-                pCount,
-                null).vkValidate()
+            KHRSwapchain.vkGetSwapchainImagesKHR(swapChain.device.device, swapChain.handle, pCount, null).vkValidate()
             val pSwapChainImages = stack.mallocLong(pCount.get(0))
-            KHRSwapchain.vkGetSwapchainImagesKHR(swapChain.device.device,
-                swapChain.handle,
-                pCount,
-                pSwapChainImages).vkValidate()
+            KHRSwapchain.vkGetSwapchainImagesKHR(swapChain.device.device, swapChain.handle, pCount, pSwapChainImages)
+                .vkValidate()
 
             images = List(pSwapChainImages.capacity()) { Image(pSwapChainImages.get(it)) }
             extent = swapChain.extent
@@ -65,18 +57,15 @@ class VulkanSwapChain(
                 val surfaceCapabilities = VkSurfaceCapabilitiesKHR.malloc(stack)
                 surface.surfaceCapabilities(device, surfaceCapabilities)
 
-                val extent = chooseSwapExtent(stack,
-                    surfaceCapabilities,
-                    framebufferSize).let { Vec2i(it.width(), it.height()) }
+                val extent =
+                    chooseSwapExtent(stack, surfaceCapabilities, framebufferSize).let { Vec2i(it.width(), it.height()) }
                 val minImageCount = chooseSwapMinImageCount(surfaceCapabilities)
                 val availableSurfaceFormats = surface.availableFormats(device, stack) { it }
                 val surfaceFormat = chooseSwapSurfaceFormat(availableSurfaceFormats).let {
                     VKSurfaceFormatKHR(it.format(), it.colorSpace())
                 }
-                val presentMode =
-                    surface.availablePresentModes(device) { chooseSwapPresentMode(it) }
-                val preTransform: VkSurfaceTransformFlagBitsKHR =
-                    surfaceCapabilities.currentTransform()
+                val presentMode = surface.availablePresentModes(device) { chooseSwapPresentMode(it) }
+                val preTransform: VkSurfaceTransformFlagBitsKHR = surfaceCapabilities.currentTransform()
 
                 val swapChain = VKSwapChain.create(tracker,
                     device,
@@ -122,9 +111,7 @@ class VulkanSwapChain(
         }
 
         private fun chooseSwapExtent(
-            stack: MemoryStack,
-            surfaceCapabilities: VkSurfaceCapabilitiesKHR,
-            framebufferSize: Vec2i
+            stack: MemoryStack, surfaceCapabilities: VkSurfaceCapabilitiesKHR, framebufferSize: Vec2i
         ): VkExtent2D {
             val currentExtent = surfaceCapabilities.currentExtent()
             if (currentExtent.width() != -1) {

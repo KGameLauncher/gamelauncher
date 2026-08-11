@@ -1,13 +1,13 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.UTF8Strings
 import de.dasbabypixel.gamelauncher.impl.vulkan.VKUtil
 import de.dasbabypixel.gamelauncher.impl.vulkan.getVKLogger
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.EXTDebugUtils
 import org.lwjgl.vulkan.VK10
@@ -97,10 +97,7 @@ class VKInstance : AbstractGameResource {
                 .messageType(EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT or EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT or EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
                 .pfnUserCallback(cb)
 
-            EXTDebugUtils.vkCreateDebugUtilsMessengerEXT(instance,
-                createInfo,
-                pAllocator,
-                pMessenger).vkValidate()
+            EXTDebugUtils.vkCreateDebugUtilsMessengerEXT(instance, createInfo, pAllocator, pMessenger).vkValidate()
             messenger = pMessenger.get(0)
 
             if (testVulkanDebugger) {
@@ -143,9 +140,8 @@ class VKInstance : AbstractGameResource {
             }
             val allRequiredExtensions =
                 extensions.plus(requiredInstanceExtensions).plus(extraRequiredExtensions).toSet()
-            val usedExtensions = createInstanceVerifyExtensions(stack,
-                allRequiredExtensions,
-                optionalInstanceExtensions)
+            val usedExtensions =
+                createInstanceVerifyExtensions(stack, allRequiredExtensions, optionalInstanceExtensions)
             val enabledLayerNames = if (enableValidationLayers) {
                 createInstanceEnableValidationLayers(stack)
             } else setOf()
@@ -190,23 +186,17 @@ class VKInstance : AbstractGameResource {
             stack: MemoryStack, requiredExtensions: Set<String>, optionalExtensions: Set<String>
         ): Set<String> {
             val pExtensionCount = stack.callocInt(1)
-            VK10.vkEnumerateInstanceExtensionProperties(null as CharSequence?,
-                pExtensionCount,
-                null).vkValidate()
+            VK10.vkEnumerateInstanceExtensionProperties(null as CharSequence?, pExtensionCount, null).vkValidate()
             val pProperties = VkExtensionProperties.calloc(pExtensionCount.get(0), stack)
-            VK10.vkEnumerateInstanceExtensionProperties(null as CharSequence?,
-                pExtensionCount,
-                pProperties).vkValidate()
+            VK10.vkEnumerateInstanceExtensionProperties(null as CharSequence?, pExtensionCount, pProperties)
+                .vkValidate()
             val availableExtensions = mutableSetOf<String>()
             pProperties.forEach {
                 val name = it.extensionNameString()
                 availableExtensions.add(name)
                 logger.debug("Detected extension {} (version {})", name, it.specVersion())
             }
-            return VKUtil.selectExtensions("instance",
-                availableExtensions,
-                requiredExtensions,
-                optionalExtensions)
+            return VKUtil.selectExtensions("instance", availableExtensions, requiredExtensions, optionalExtensions)
         }
     }
 }

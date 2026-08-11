@@ -1,30 +1,12 @@
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPattern
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_GRAY
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_LOCATION
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_LOGGER
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_THREAD
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_TIME
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.GRAY
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.HIGHLIGHT
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_EXCEPTION
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_HIGHLIGHT
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_LEVEL
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_LOCATION
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_LOGGER
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_MARKER
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_MSG
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_THREAD
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.N_TIME
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.SB
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.STYLE
-import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult.Empty
-import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult.Formatted
-import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult.Multi
-import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult.Text
-import de.dasbabypixel.gamelauncher.api.util.logging.PatternException
-import de.dasbabypixel.gamelauncher.api.util.logging.PatternRegistry
+import de.dasbabypixel.gamelauncher.logging.CustomPattern
+import de.dasbabypixel.gamelauncher.logging.ParseResult.Empty
+import de.dasbabypixel.gamelauncher.logging.ParseResult.Formatted
+import de.dasbabypixel.gamelauncher.logging.ParseResult.Multi
+import de.dasbabypixel.gamelauncher.logging.ParseResult.Text
+import de.dasbabypixel.gamelauncher.logging.PatternException
+import de.dasbabypixel.gamelauncher.logging.PatternRegistry
 
 
 @Suppress("MemberVisibilityCanBePrivate")
@@ -33,91 +15,91 @@ object Log4jPatternPlatformProvider : CustomPattern.PlatformProvider {
     val patternNames: List<String>
         get() = patterns.keys.toList()
 
-    fun addPattern(name: String) {
+    fun addPattern(patternRegistry: PatternRegistry, name: String) {
         val pattern = CustomPattern(name, CustomPattern.NativeSimplifier)
         patterns[name] = pattern
-        PatternRegistry.registerPattern(pattern)
+        patternRegistry.registerPattern(pattern)
     }
 
-    fun register() {
-        addPattern("style")
-        addPattern("n_msg")
-        addPattern("n_highlight")
-        addPattern("n_time")
-        addPattern("n_level")
-        addPattern("n_logger")
-        addPattern("n_thread")
-        addPattern("n_exception")
-        addPattern("n_marker")
-        addPattern("n_location")
-        addPattern("n")
+    fun register(patternRegistry: PatternRegistry) {
+        addPattern(patternRegistry, "style")
+        addPattern(patternRegistry, "n_msg")
+        addPattern(patternRegistry, "n_highlight")
+        addPattern(patternRegistry, "n_time")
+        addPattern(patternRegistry, "n_level")
+        addPattern(patternRegistry, "n_logger")
+        addPattern(patternRegistry, "n_thread")
+        addPattern(patternRegistry, "n_exception")
+        addPattern(patternRegistry, "n_marker")
+        addPattern(patternRegistry, "n_location")
+        addPattern(patternRegistry, "n")
 
-        PatternRegistry.registerPattern(CustomPattern("location") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("location") { c, _, parse ->
             parse.assertContentNull()
             parse.assertOptionsNull()
-            Formatted(SB, Formatted(STYLE, Formatted(N_LOCATION), Text(C_LOCATION)))
+            Formatted(c, c.sb, Formatted(c, c.style, Formatted(c, c.nativeLocation), Text(c.colorLocation)))
         })
-        PatternRegistry.registerPattern(CustomPattern("msg") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("msg") { c, _, parse ->
             parse.assertOptionsNull()
             val style = parse.content
             if (style != null) {
-                Formatted(STYLE, Formatted(N_MSG), style)
+                Formatted(c, c.style, Formatted(c, c.nativeMsg), style)
             } else {
-                Formatted(HIGHLIGHT, Formatted(N_MSG))
+                Formatted(c, c.highlight, Formatted(c, c.nativeMsg))
             }
         })
-        PatternRegistry.registerPattern(CustomPattern("marker") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("marker") { c, _, parse ->
             parse.assertOptionsNull()
-            val style = parse.content ?: Text(C_LOGGER)
-            Formatted(SB, Formatted(STYLE, Formatted(N_MARKER), style))
+            val style = parse.content ?: Text(c.colorLogger)
+            Formatted(c, c.sb, Formatted(c, c.style, Formatted(c, c.nativeMarker), style))
         })
-        PatternRegistry.registerPattern(CustomPattern("exception") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("exception") { c, _, parse ->
             parse.assertContentNull()
             parse.assertOptionsNull()
-            Formatted(HIGHLIGHT, Formatted(N_EXCEPTION))
+            Formatted(c, c.highlight, Formatted(c, c.nativeException))
         })
-        PatternRegistry.registerPattern(CustomPattern("highlight") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("highlight") { c, _, parse ->
             parse.assertContentNotNull()
             parse.assertOptionsNull()
-            Formatted(N_HIGHLIGHT, parse.content)
+            Formatted(c, c.nativeHighlight, parse.content)
         })
-        PatternRegistry.registerPattern(CustomPattern("time") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("time") { c, _, parse ->
             parse.assertContentNull()
             parse.assertOptionsNull()
-            Formatted(SB, Formatted(STYLE, Formatted(N_TIME), Text(C_TIME)))
+            Formatted(c, c.sb, Formatted(c, c.style, Formatted(c, c.nativeTime), Text(c.colorTime)))
         })
-        PatternRegistry.registerPattern(CustomPattern("level") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("level") { c, _, parse ->
             parse.assertContentNull()
             parse.assertOptionsNull()
-            Formatted(SB, Formatted(HIGHLIGHT, Formatted(N_LEVEL)))
+            Formatted(c, c.sb, Formatted(c, c.highlight, Formatted(c, c.nativeLevel)))
         })
-        PatternRegistry.registerPattern(CustomPattern("logger") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("logger") { c, _, parse ->
             parse.assertContentNull()
             parse.assertOptionsNull()
-            Formatted(SB, Formatted(STYLE, Formatted(N_LOGGER), Text(C_LOGGER)))
+            Formatted(c, c.sb, Formatted(c, c.style, Formatted(c, c.nativeLogger), Text(c.colorLogger)))
         })
-        PatternRegistry.registerPattern(CustomPattern("thread") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("thread") { c, _, parse ->
             parse.assertContentNull()
             parse.assertOptionsNull()
-            Formatted(SB, Formatted(STYLE, Formatted(N_THREAD), Text(C_THREAD)))
+            Formatted(c, c.sb, Formatted(c, c.style, Formatted(c, c.nativeThread), Text(c.colorThread)))
         })
-        PatternRegistry.registerPattern(CustomPattern("gray") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("gray") { c, _, parse ->
             parse.assertContentNotNull()
             parse.assertOptionsNull()
-            Formatted(STYLE, parse.content, Text(C_GRAY))
+            Formatted(c, c.style, parse.content, Text(c.colorGray))
         })
-        PatternRegistry.registerPattern(CustomPattern("sb") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("sb") { c, _, parse ->
             parse.assertContentNotNull()
             parse.assertOptionsNull()
-            Formatted(GRAY, Multi(Text("["), parse.content ?: Empty, Text("]")))
+            Formatted(c, c.gray, Multi(Text("["), parse.content ?: Empty, Text("]")))
         })
-        PatternRegistry.registerPattern(CustomPattern("lsb") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("lsb") { c, _, parse ->
             parse.assertContentEmpty()
-            Formatted(STYLE, Text("["), parse.options ?: Text(C_GRAY))
+            Formatted(c, c.style, Text("["), parse.options ?: Text(c.colorGray))
         })
-        PatternRegistry.registerPattern(CustomPattern("rsb") { _, parse ->
+        patternRegistry.registerPattern(CustomPattern("rsb") { c, _, parse ->
             parse.assertContentEmpty()
-            Formatted(STYLE, Text("]"), parse.options ?: Text(C_GRAY))
+            Formatted(c, c.style, Text("]"), parse.options ?: Text(c.colorGray))
         })
     }
 

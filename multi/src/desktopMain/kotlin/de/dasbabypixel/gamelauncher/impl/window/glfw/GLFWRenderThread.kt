@@ -1,8 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
 import de.dasbabypixel.gamelauncher.api.util.concurrent.allComplete
 import de.dasbabypixel.gamelauncher.api.util.concurrent.create
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
@@ -16,6 +14,7 @@ import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKFence
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSemaphore
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VkResult
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.ffm.FFM
 import org.lwjgl.vulkan.KHRSwapchain
@@ -51,20 +50,14 @@ class GLFWRenderThread(tracker: ResourceTracker, thread: Thread, val window: GLF
         device = window.surface.logicalDevice
         swapChain = VulkanSwapChain.create(tracker, window.surface, window.framebufferSize)
         imageViews = VulkanImageViews.create(tracker, swapChain)
-        graphicsPipeline = VulkanGraphicsPipeline.create(tracker,
-            device,
-            swapChain.extent,
-            swapChain.surfaceFormat)
+        graphicsPipeline = VulkanGraphicsPipeline.create(tracker, device, swapChain.extent, swapChain.surfaceFormat)
         commandPool = VulkanCommandPool.create(tracker, device, graphicsPipeline)
         commandBuffers = List(maxFramesInFlight) {
             VulkanCommandBuffer.create(tracker, commandPool)
         }
-        presentCompleteSemaphores =
-            List(maxFramesInFlight) { VKSemaphore.create(tracker, device.device) }
-        submitSemaphores =
-            List(swapChain.images.size) { VKSemaphore.create(tracker, device.device) }
-        inFlightFences =
-            List(maxFramesInFlight) { VKFence.create(tracker, device.device, signaled = true) }
+        presentCompleteSemaphores = List(maxFramesInFlight) { VKSemaphore.create(tracker, device.device) }
+        submitSemaphores = List(swapChain.images.size) { VKSemaphore.create(tracker, device.device) }
+        inFlightFences = List(maxFramesInFlight) { VKFence.create(tracker, device.device, signaled = true) }
 
         swapChainValid = true
 
@@ -105,8 +98,7 @@ class GLFWRenderThread(tracker: ResourceTracker, thread: Thread, val window: GLF
             }
 
             val imageIndex = pImageIndex.get(0)
-            VK10.vkResetCommandBuffer(commandBuffers[frameIndex].commandBuffer.handle, 0)
-                .vkValidate()
+            VK10.vkResetCommandBuffer(commandBuffers[frameIndex].commandBuffer.handle, 0).vkValidate()
             commandBuffers[frameIndex].recordCommandBuffer(swapChain, imageViews, imageIndex)
 
             val submitInfo = VkSubmitInfo.calloc(stack)
@@ -117,9 +109,7 @@ class GLFWRenderThread(tracker: ResourceTracker, thread: Thread, val window: GLF
                 .pCommandBuffers(stack.pointers(commandBuffers[frameIndex].commandBuffer.handle))
                 .pSignalSemaphores(stack.longs(submitSemaphores[imageIndex].handle))
 
-            VK10.vkQueueSubmit(device.graphicsQueue.queue,
-                submitInfo,
-                inFlightFences[frameIndex].handle).vkValidate()
+            VK10.vkQueueSubmit(device.graphicsQueue.queue, submitInfo, inFlightFences[frameIndex].handle).vkValidate()
 
             val presentInfo = VkPresentInfoKHR.calloc(stack)
                 .`sType$Default`()
@@ -127,8 +117,7 @@ class GLFWRenderThread(tracker: ResourceTracker, thread: Thread, val window: GLF
                 .swapchainCount(1)
                 .pSwapchains(stack.longs(swapChain.swapChain.handle))
                 .pImageIndices(stack.ints(imageIndex))
-            KHRSwapchain.vkQueuePresentKHR(device.graphicsQueue.queue, presentInfo)
-                .let { result: VkResult ->
+            KHRSwapchain.vkQueuePresentKHR(device.graphicsQueue.queue, presentInfo).let { result: VkResult ->
                     if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR || result == KHRSwapchain.VK_SUBOPTIMAL_KHR || framebufferResized) {
                         framebufferResized = false
                         println("Out of date or suboptimal")
@@ -165,14 +154,11 @@ class GLFWRenderThread(tracker: ResourceTracker, thread: Thread, val window: GLF
             }
             return
         } else if (!swapChainValid) {
-            logger.debug("Framebuffer size {}x{}, resuming rendering",
-                framebufferSize.x,
-                framebufferSize.y)
+            logger.debug("Framebuffer size {}x{}, resuming rendering", framebufferSize.x, framebufferSize.y)
         }
         swapChain = VulkanSwapChain.create(tracker, window.surface, framebufferSize)
         imageViews = VulkanImageViews.create(tracker, swapChain)
-        submitSemaphores =
-            List(swapChain.images.size) { VKSemaphore.create(tracker, device.device) }
+        submitSemaphores = List(swapChain.images.size) { VKSemaphore.create(tracker, device.device) }
         swapChainValid = true
 
         FFM.ffmConfigBuilder(MethodHandles.lookup()).signal()
@@ -181,9 +167,8 @@ class GLFWRenderThread(tracker: ResourceTracker, thread: Thread, val window: GLF
     override fun stopExecuting() {
         device.waitIdle()
 
-        val objects = inFlightFences + presentCompleteSemaphores + commandBuffers + listOf(
-            commandPool,
-            graphicsPipeline)
+        val objects =
+            inFlightFences + presentCompleteSemaphores + commandBuffers + listOf(commandPool, graphicsPipeline)
         objects.map { it.cleanupAsync() }.allComplete().resultNow()
         cleanupSwapChain()
     }

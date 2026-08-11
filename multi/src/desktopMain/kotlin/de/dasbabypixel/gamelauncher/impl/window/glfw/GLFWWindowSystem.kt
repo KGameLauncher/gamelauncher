@@ -1,12 +1,12 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.api.util.concurrent.allComplete
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
 import de.dasbabypixel.gamelauncher.impl.window.WindowSystem
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 
 class GLFWWindowSystem : AbstractGameResource(ResourceTracker.global), WindowSystem {
     private val logger by getLogger()

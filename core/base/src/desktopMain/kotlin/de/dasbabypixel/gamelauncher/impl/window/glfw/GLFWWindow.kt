@@ -1,15 +1,15 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
-import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanSurface
 import de.dasbabypixel.gamelauncher.impl.window.Window
+import de.dasbabypixel.gamelauncher.lifecycle.ShutdownHandler
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.math.Vec2i
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.util.function.GameFunction
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback

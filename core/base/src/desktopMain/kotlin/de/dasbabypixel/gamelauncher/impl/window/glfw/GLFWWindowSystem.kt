@@ -1,14 +1,14 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.allComplete
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
 import de.dasbabypixel.gamelauncher.impl.window.WindowSystem
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.SimpleResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.allComplete
 
-class GLFWWindowSystem : AbstractGameResource(ResourceTracker.global), WindowSystem {
+class GLFWWindowSystem : AbstractGameResource(SimpleResourceTracker.global), WindowSystem {
     private val logger by getLogger()
     private var id: Int = 0
     val windows: MutableSet<GLFWWindow> = HashSet()

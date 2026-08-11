@@ -1,10 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j
 
-import de.dasbabypixel.gamelauncher.api.util.logging.Marker
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.LWJGLLogging
+import de.dasbabypixel.gamelauncher.logging.Marker
 import org.slf4j.Logger
 
-class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.api.util.logging.Logger {
+class SLF4JLogger(val l: Logger) : de.dasbabypixel.gamelauncher.logging.Logger {
     init {
         LWJGLLogging.init()
     }

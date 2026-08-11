@@ -1,9 +1,9 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.KHRSurface
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR
@@ -20,24 +20,18 @@ class VKSurface : AbstractGameResource {
     }
 
     fun surfaceCapabilities(device: VKDevice, surfaceCapabilities: VkSurfaceCapabilitiesKHR) {
-        KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.physicalDevice.device,
-            handle,
-            surfaceCapabilities).vkValidate()
+        KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.physicalDevice.device, handle, surfaceCapabilities)
+            .vkValidate()
     }
 
     fun <T> availableFormats(
         device: VKDevice, stack: MemoryStack, func: (VkSurfaceFormatKHR.Buffer) -> T
     ): T {
         val pCount = stack.mallocInt(1)
-        KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice.device,
-            handle,
-            pCount,
-            null).vkValidate()
+        KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice.device, handle, pCount, null).vkValidate()
         val pFormats = VkSurfaceFormatKHR.malloc(pCount.get(0), stack)
-        KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice.device,
-            handle,
-            pCount,
-            pFormats).vkValidate()
+        KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice.device, handle, pCount, pFormats)
+            .vkValidate()
         return func(pFormats)
     }
 
@@ -48,15 +42,11 @@ class VKSurface : AbstractGameResource {
     fun <T> availablePresentModes(device: VKDevice, func: (IntBuffer) -> T): T {
         return MemoryStack.stackPush().use { stack ->
             val pCount = stack.mallocInt(1)
-            KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR(device.physicalDevice.device,
-                handle,
-                pCount,
-                null).vkValidate()
+            KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR(device.physicalDevice.device, handle, pCount, null)
+                .vkValidate()
             val pModes = stack.mallocInt(pCount.get(0))
-            KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR(device.physicalDevice.device,
-                handle,
-                pCount,
-                pModes).vkValidate()
+            KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR(device.physicalDevice.device, handle, pCount, pModes)
+                .vkValidate()
             func(pModes)
         }
     }

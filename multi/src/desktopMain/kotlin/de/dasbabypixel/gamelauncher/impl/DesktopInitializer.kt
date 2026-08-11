@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.LWJGLLogging
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanInitializer

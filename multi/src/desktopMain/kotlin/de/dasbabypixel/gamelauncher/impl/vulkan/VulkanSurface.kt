@@ -1,9 +1,9 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurface
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.lwjgl.system.MemoryStack
 
 class VulkanSurface(
@@ -22,9 +22,8 @@ class VulkanSurface(
         ): VulkanSurface {
             val surface = VKSurface(tracker, handle, instance.instance)
             val logicalDevice = MemoryStack.stackPush().use { stack ->
-                val bestPhysicalDevice = VulkanDeviceSelection.selectBestPhysicalDevice(stack,
-                    instance.instance,
-                    surface)
+                val bestPhysicalDevice =
+                    VulkanDeviceSelection.selectBestPhysicalDevice(stack, instance.instance, surface)
 
                 VulkanLogicalDevice.create(tracker, bestPhysicalDevice, instance)
             }

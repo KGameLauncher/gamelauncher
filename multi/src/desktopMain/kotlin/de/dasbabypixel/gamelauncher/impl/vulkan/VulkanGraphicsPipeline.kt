@@ -1,13 +1,13 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
 import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKPipeline
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKPipelineLayout
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKShaderModule
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKSurfaceFormatKHR
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.VK10
 import org.lwjgl.vulkan.VkExtent2D
@@ -45,8 +45,7 @@ class VulkanGraphicsPipeline(
             swapChainExtent: Vec2i,
             surfaceFormat: VKSurfaceFormatKHR,
         ): VulkanGraphicsPipeline {
-            val shaderModule =
-                VKShaderModule.create(tracker, device.device, readShaderFile("slang.spv"))
+            val shaderModule = VKShaderModule.create(tracker, device.device, readShaderFile("slang.spv"))
 
             return MemoryStack.stackPush().use { stack ->
                 val shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack).also { stages ->
@@ -65,11 +64,9 @@ class VulkanGraphicsPipeline(
                 }
 
                 val dynamicStates = VkPipelineDynamicStateCreateInfo.calloc(stack).`sType$Default`()
-                dynamicStates.pDynamicStates(stack.ints(VK10.VK_DYNAMIC_STATE_VIEWPORT,
-                    VK10.VK_DYNAMIC_STATE_SCISSOR))
+                dynamicStates.pDynamicStates(stack.ints(VK10.VK_DYNAMIC_STATE_VIEWPORT, VK10.VK_DYNAMIC_STATE_SCISSOR))
 
-                val vertexInputInfo =
-                    VkPipelineVertexInputStateCreateInfo.calloc(stack).`sType$Default`()
+                val vertexInputInfo = VkPipelineVertexInputStateCreateInfo.calloc(stack).`sType$Default`()
                 val inputAssembly = VkPipelineInputAssemblyStateCreateInfo.calloc(stack)
                     .`sType$Default`()
                     .topology(VK10.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -139,16 +136,14 @@ class VulkanGraphicsPipeline(
                     .renderPass(0L)
                     .pNext(pipelineRenderingCreateInfo)
 
-                val graphicsPipeline =
-                    VKPipeline.create(tracker, device.device, graphicsPipelineCreateInfo)
+                val graphicsPipeline = VKPipeline.create(tracker, device.device, graphicsPipelineCreateInfo)
 
                 VulkanGraphicsPipeline(tracker, graphicsPipeline, pipelineLayout, shaderModule)
             }
         }
 
         fun readShaderFile(path: String): ByteArray {
-            return VulkanGraphicsPipeline::class.java.classLoader.getResourceAsStream(path)!!
-                .readBytes()
+            return VulkanGraphicsPipeline::class.java.classLoader.getResourceAsStream(path)!!.readBytes()
         }
     }
 }

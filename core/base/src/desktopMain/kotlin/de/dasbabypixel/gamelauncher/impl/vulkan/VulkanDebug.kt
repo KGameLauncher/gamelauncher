@@ -1,10 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
-import de.dasbabypixel.gamelauncher.api.util.Config
-import de.dasbabypixel.gamelauncher.api.util.debug.Debug
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKInstance
+import de.dasbabypixel.gamelauncher.lifecycle.ShutdownHandler
+import de.dasbabypixel.gamelauncher.util.Config
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.debug.Debug
 import org.lwjgl.vulkan.EXTDebugUtils
 import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT
 
@@ -24,10 +24,7 @@ fun VKInstance.setupDebugMessenger() {
             EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT -> "general"
             else -> "UNKNOWN"
         }
-        VulkanDebug.logger.error("Validation layer: Type {} Message: {}",
-            typeString,
-            message,
-            GameException())
+        VulkanDebug.logger.error("Validation layer: Type {} Message: {}", typeString, message, GameException())
         ShutdownHandler.shutdownGracefully()
         0
     }

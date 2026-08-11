@@ -2,19 +2,22 @@
 
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import de.dasbabypixel.gamelauncher.api.lifecycle.ShutdownHandler
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.DesktopConfig
-import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractThreadTask
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.create
-import de.dasbabypixel.gamelauncher.api.util.concurrent.sleep
-import de.dasbabypixel.gamelauncher.api.util.debug.Debug
-import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.LoggingPrintStream
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
-import de.dasbabypixel.gamelauncher.api.util.logging.withDefaultMarker
+import de.dasbabypixel.gamelauncher.lifecycle.ShutdownHandler
+import de.dasbabypixel.gamelauncher.logging.CustomPatterns
+import de.dasbabypixel.gamelauncher.logging.JvmLogging
+import de.dasbabypixel.gamelauncher.logging.LogLevelRegistry
+import de.dasbabypixel.gamelauncher.logging.LoggingPrintStream
+import de.dasbabypixel.gamelauncher.logging.PatternRegistry
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.withDefaultMarker
+import de.dasbabypixel.gamelauncher.resource.SimpleResourceTracker
+import de.dasbabypixel.gamelauncher.util.DesktopConfig
+import de.dasbabypixel.gamelauncher.util.concurrent.AbstractThreadTask
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.create
+import de.dasbabypixel.gamelauncher.util.concurrent.sleep
+import de.dasbabypixel.gamelauncher.util.debug.Debug
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
@@ -52,12 +55,7 @@ object LWJGLLogging {
             else system(true)
         }.encoding(console.charset()).build()
     } else {
-        TerminalBuilder.builder()
-            .dumb(true)
-            .system(true)
-            .exec(false)
-            .encoding(JvmLogging.out.charset())
-            .build()
+        TerminalBuilder.builder().dumb(true).system(true).exec(false).encoding(JvmLogging.out.charset()).build()
     }
 
     private val reader: LineReader
@@ -68,7 +66,11 @@ object LWJGLLogging {
         val useAnsi = DesktopConfig.useAnsi()
 
         reader = LineReaderBuilder.builder().appName("GameLauncher").terminal(terminal).build()
-        Log4jConfiguration.setup(useAnsi, reader)
+        val patternRegistry = PatternRegistry(Log4jPatternPlatformProvider)
+        LWJGLPatternProvider.register(patternRegistry)
+        val customPatterns = CustomPatterns(patternRegistry)
+        val logLevelRegistry = LogLevelRegistry(customPatterns)
+        Log4jConfiguration.setup(patternRegistry, logLevelRegistry, customPatterns, useAnsi, reader)
 
         reader.option(LineReader.Option.AUTO_GROUP, false)
         reader.option(LineReader.Option.AUTO_MENU_LIST, true)
@@ -91,7 +93,7 @@ object LWJGLLogging {
 
     fun startReader() {
         readerThread = Thread.create(name = "Console Thread", taskFactory = { thread ->
-            object : AbstractThreadTask(ResourceTracker.global, thread) {
+            object : AbstractThreadTask(SimpleResourceTracker.global, thread) {
                 val exitFuture = CompletableFuture<Unit>()
                 val exit = AtomicBoolean(false)
                 override fun run0() {

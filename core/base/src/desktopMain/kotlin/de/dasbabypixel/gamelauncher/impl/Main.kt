@@ -1,8 +1,8 @@
 package de.dasbabypixel.gamelauncher.impl
 
-import de.dasbabypixel.gamelauncher.api.util.concurrent.configureThirdPartyThread
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j.LWJGLLogging
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.util.concurrent.configureThirdPartyThread
 import de.dasbabypixel.gamelauncher.util.time.nanoTime
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis

@@ -28,20 +28,20 @@ includeBuild("build-extensions")
 
 rootProject.name = "gamelauncher"
 
-include("engine")
-include("engine:core")
-include("engine:implementation:core")
-include("engine:implementation:providers")
-include("engine:implementation:opengl")
-include("engine:implementation:vulkan")
-include("engine:implementation:lwjgl")
+//include("engine")
+//include("engine:core")
+//include("engine:implementation:core")
+//include("engine:implementation:providers")
+//include("engine:implementation:opengl")
+//include("engine:implementation:vulkan")
+//include("engine:implementation:lwjgl")
 
 include("core:util")
 include("core:service-loader")
 include("core:base")
 include("core:logging")
 include("core:graphics")
-include("multi")
+//include("multi")
 //include("executables")
 
 val ideaVendor: String? = System.getProperty("idea.vendor.name")

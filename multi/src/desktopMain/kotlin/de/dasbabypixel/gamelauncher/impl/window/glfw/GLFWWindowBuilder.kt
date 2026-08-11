@@ -1,13 +1,13 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
 import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.api.util.GameException
 import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanAccess
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWVulkan
 import org.lwjgl.system.MemoryStack
@@ -52,10 +52,7 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
 
         val surface = VulkanAccess.instance.createSurface { stack, instance ->
             val pSurface = stack.mallocLong(1)
-            GLFWVulkan.glfwCreateWindowSurface(instance.instance,
-                handle,
-                instance.pAllocator,
-                pSurface).vkValidate()
+            GLFWVulkan.glfwCreateWindowSurface(instance.instance, handle, instance.pAllocator, pSurface).vkValidate()
             pSurface.get(0)
         }
         val id = system.nextId()
@@ -68,14 +65,7 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
             GLFW.glfwGetFramebufferSize(handle, pWidth, pHeight)
             Vec2i(pWidth.get(0), pHeight.get(0))
         }
-        return GLFWWindow(system,
-            id,
-            tracker,
-            handle,
-            framebufferSize,
-            iconified,
-            maximized,
-            surface).also {
+        return GLFWWindow(system, id, tracker, handle, framebufferSize, iconified, maximized, surface).also {
             system.windows.add(it)
         }
     }

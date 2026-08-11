@@ -1,14 +1,15 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.AbstractExecutorThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
-import de.dasbabypixel.gamelauncher.api.util.concurrent.Thread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.configureThirdPartyThread
-import de.dasbabypixel.gamelauncher.api.util.concurrent.currentThread
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.getLogger
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.resource.SimpleResourceTracker
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.AbstractExecutorThread
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
+import de.dasbabypixel.gamelauncher.util.concurrent.Thread
+import de.dasbabypixel.gamelauncher.util.concurrent.configureThirdPartyThread
+import de.dasbabypixel.gamelauncher.util.concurrent.currentThread
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFW.glfwInit
 import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
@@ -23,20 +24,14 @@ class GLFWThread(tracker: ResourceTracker, serviceRegistry: ServiceRegistry, thr
     private val logger by getLogger("LWJGL")
     val vulkanExtensions = CompletableFuture<Set<String>>()
 
-    @OptIn(ExperimentalStdlibApi::class)
     private val errorCallback = object : GLFWErrorCallback() {
-        private val ERROR_CODES = APIUtil.apiClassTokens({ _, value -> value in 0x10001..0x1ffff },
-            null,
-            GLFW::class.java)
+        private val ERROR_CODES =
+            APIUtil.apiClassTokens({ _, value -> value in 0x10001..0x1ffff }, null, GLFW::class.java)
 
         override fun invoke(errorCode: Int, descriptionId: Long) {
             val description = getDescription(descriptionId)
             val error = ERROR_CODES[errorCode]!!
-            logger.error("GLFW Error: {}({}) - {}",
-                error,
-                errorCode.toHexString(),
-                description,
-                Exception())
+            logger.error("GLFW Error: {}({}) - {}", error, errorCode.toHexString(), description, Exception())
         }
     }
 
@@ -95,7 +90,7 @@ class GLFWThread(tracker: ResourceTracker, serviceRegistry: ServiceRegistry, thr
          */
         fun takeOverByGLFW() {
             val thread = java.lang.Thread.currentThread().configureThirdPartyThread({ thread ->
-                GLFWThread(ResourceTracker.global, ServiceRegistry.global, thread)
+                GLFWThread(SimpleResourceTracker.global, ServiceRegistry.global, thread)
             }, overwrite = true)
             thread.name = "GLFW-Thread"
             this.thread.complete(thread)

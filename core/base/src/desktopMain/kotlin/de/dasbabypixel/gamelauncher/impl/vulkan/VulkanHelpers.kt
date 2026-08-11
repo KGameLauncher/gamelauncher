@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.getLogger
 import de.dasbabypixel.gamelauncher.util.GameException
 import org.lwjgl.PointerBuffer
 import org.lwjgl.system.MemoryStack
@@ -8,10 +8,7 @@ import org.lwjgl.system.MemoryStack
 object VKUtil {
     private val logger by getVKLogger()
     fun selectExtensions(
-        type: String,
-        availableExtensions: Set<String>,
-        requiredExtensions: Set<String>,
-        optionalExtensions: Set<String>
+        type: String, availableExtensions: Set<String>, requiredExtensions: Set<String>, optionalExtensions: Set<String>
     ): Set<String> {
         val missingExtensions = mutableSetOf<String>()
         requiredExtensions.forEach { if (!availableExtensions.contains(it)) missingExtensions.add(it) }
@@ -25,10 +22,9 @@ object VKUtil {
 
         val selectExtensions = mutableSetOf<String>()
         selectExtensions.addAll(requiredExtensions)
-        selectExtensions.addAll(optionalExtensions.filter { availableExtensions.contains(it) }
-            .also {
-                logger.debug("Using optional $type extensions: {}", it)
-            })
+        selectExtensions.addAll(optionalExtensions.filter { availableExtensions.contains(it) }.also {
+            logger.debug("Using optional $type extensions: {}", it)
+        })
         return selectExtensions
     }
 }

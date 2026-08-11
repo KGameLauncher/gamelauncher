@@ -1,7 +1,7 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKInstance
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.VkAllocationCallbacks
 
@@ -16,11 +16,8 @@ object VulkanInitializer {
         val pAllocator: VkAllocationCallbacks? = null
 
         MemoryStack.stackPush().use { stack ->
-            val vkInstance = VKInstance.createInstance(stack,
-                VulkanDebug.enableValidationLayers,
-                tracker,
-                pAllocator,
-                extensions)
+            val vkInstance =
+                VKInstance.createInstance(stack, VulkanDebug.enableValidationLayers, tracker, pAllocator, extensions)
             this.vulkanInstance = VulkanInstance(tracker, vkInstance)
         }
     }

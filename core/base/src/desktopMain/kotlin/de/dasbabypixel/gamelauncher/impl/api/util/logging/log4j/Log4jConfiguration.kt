@@ -1,15 +1,16 @@
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import de.dasbabypixel.gamelauncher.api.util.Color
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns
-import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.LogLevelRegistry
-import de.dasbabypixel.gamelauncher.api.util.logging.LogType
-import de.dasbabypixel.gamelauncher.api.util.logging.LoggingPrintStream
-import de.dasbabypixel.gamelauncher.api.util.logging.PatternParser
-import de.dasbabypixel.gamelauncher.api.util.logging.styleHex
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.LogUse
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.slf4j.SLF4JLogger
+import de.dasbabypixel.gamelauncher.logging.CustomPatterns
+import de.dasbabypixel.gamelauncher.logging.JvmLogging
+import de.dasbabypixel.gamelauncher.logging.LogLevelRegistry
+import de.dasbabypixel.gamelauncher.logging.LogType
+import de.dasbabypixel.gamelauncher.logging.LoggingPrintStream
+import de.dasbabypixel.gamelauncher.logging.PatternParser
+import de.dasbabypixel.gamelauncher.logging.PatternRegistry
+import de.dasbabypixel.gamelauncher.logging.styleHex
+import de.dasbabypixel.gamelauncher.util.Color
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.Appender
 import org.apache.logging.log4j.core.Core
@@ -81,23 +82,28 @@ object Log4jConfiguration {
         return addAttribute("additivity", false)
     }
 
-    private fun createConfiguration(useAnsi: Boolean, lineReader: LineReader): Configuration {
+    private fun createConfiguration(
+        logLevelRegistry: LogLevelRegistry,
+        patternRegistry: PatternRegistry,
+        customPatterns: CustomPatterns,
+        useAnsi: Boolean,
+        lineReader: LineReader
+    ): Configuration {
         val terminalAppenderEntry = PluginEntry()
         terminalAppenderEntry.category = Core.CATEGORY_NAME
         terminalAppenderEntry.key = TerminalConsoleAppender.NAME.lowercase()
         terminalAppenderEntry.name = TerminalConsoleAppender.NAME
         terminalAppenderEntry.isPrintable = true
         terminalAppenderEntry.className = TerminalConsoleAppender::class.java.name
-        val terminalAppenderType = PluginType(terminalAppenderEntry,
-            TerminalConsoleAppender::class.java,
-            Appender.ELEMENT_TYPE)
-        PluginRegistry.getInstance()
-            .loadFromMainClassLoader()[Core.CATEGORY_NAME.lowercase()]!!.add(terminalAppenderType)
+        val terminalAppenderType =
+            PluginType(terminalAppenderEntry, TerminalConsoleAppender::class.java, Appender.ELEMENT_TYPE)
+        PluginRegistry.getInstance().loadFromMainClassLoader()[Core.CATEGORY_NAME.lowercase()]!!.add(
+            terminalAppenderType)
         TerminalConsoleAppender.lineReader = lineReader
         val disableAnsi = !useAnsi
         val builder = ConfigurationBuilderFactory.newConfigurationBuilder()
 
-        val logTypeList = LogLevelRegistry.levels()
+        val logTypeList = logLevelRegistry.levels()
         Level.values()
         val logger = builder.newRootLogger(Level.ALL, true)
         val stdout = builder.newLogger("stdout", Level.ALL, true).configureOut()
@@ -107,8 +113,7 @@ object Log4jConfiguration {
 
         fun LogType.Fixed.marker() = "Marker$marker"
 
-        val markers: List<String> =
-            logTypeList.filterIsInstance<LogType.Fixed>().map { it.marker() }
+        val markers: List<String> = logTypeList.filterIsInstance<LogType.Fixed>().map { it.marker() }
 
         val printStreamMismatchFilter = builder.filter("LevelMatchFilter",
             "level" to Log4jLevels.PRINT_STREAM.name(),
@@ -144,9 +149,9 @@ object Log4jConfiguration {
 
         logTypeList.forEach { logType ->
             val name = when (logType) {
-                LogType.Default -> "ROOT"
-                LogType.Stderr -> "stderr"
-                LogType.Stdout -> "stdout"
+                is LogType.Default -> "ROOT"
+                is LogType.Stderr -> "stderr"
+                is LogType.Stdout -> "stdout"
                 is LogType.Fixed -> {
                     val marker = logType.marker()
 
@@ -155,11 +160,11 @@ object Log4jConfiguration {
                     val streamName = "Stream$marker"
                     val streamNameFile = "Stream${marker}File"
 
-                    val pattern = convertToPattern(logType, LogUse.NORMAL)
+                    val pattern = convertToPattern(customPatterns, logType, LogUse.NORMAL)
                     builder.terminalConsole(baseName, pattern, disableAnsi)
                     builder.file(baseNameFile, pattern)
 
-                    val streamPattern = convertToPattern(logType, LogUse.STREAM)
+                    val streamPattern = convertToPattern(customPatterns, logType, LogUse.STREAM)
                     builder.terminalConsole(streamName, streamPattern, disableAnsi)
                     builder.file(streamNameFile, streamPattern)
 
@@ -170,13 +175,10 @@ object Log4jConfiguration {
                     logger.add(builder.newAppenderRef(baseNameFile).add(acceptOnlyMarkerFilter))
 
                     val streamFilters = builder.newComponent("Filters")
-                        .addComponent(builder.newFilter("LevelMatchFilter",
-                            Filter.Result.ACCEPT,
-                            Filter.Result.DENY)
+                        .addComponent(builder.newFilter("LevelMatchFilter", Filter.Result.ACCEPT, Filter.Result.DENY)
                             .addAttribute("level", Log4jLevels.PRINT_STREAM.name()))
-                        .addComponent(builder.newFilter("MarkerFilter",
-                            Filter.Result.NEUTRAL,
-                            Filter.Result.DENY).addAttribute("marker", marker))
+                        .addComponent(builder.newFilter("MarkerFilter", Filter.Result.NEUTRAL, Filter.Result.DENY)
+                            .addAttribute("marker", marker))
                     logger.add(builder.newAppenderRef(streamName).addComponent(streamFilters))
                     logger.add(builder.newAppenderRef(streamNameFile).addComponent(streamFilters))
 
@@ -194,20 +196,20 @@ object Log4jConfiguration {
                 }
             }
             val nameFile = "${name}File"
-            val pattern = convertToPattern(logType, LogUse.NORMAL)
+            val pattern = convertToPattern(customPatterns, logType, LogUse.NORMAL)
             builder.terminalConsole(name, pattern, disableAnsi)
             builder.file(nameFile, pattern)
             when (logType) {
-                LogType.Default -> {
+                is LogType.Default -> {
                     logger.add(name, false)
                 }
 
-                LogType.Stderr -> {
+                is LogType.Stderr -> {
                     stderr.add(builder.newAppenderRef(name))
                     stderr.add(builder.newAppenderRef(nameFile))
                 }
 
-                LogType.Stdout -> {
+                is LogType.Stdout -> {
                     stdout.add(builder.newAppenderRef(name))
                     stdout.add(builder.newAppenderRef(nameFile))
                 }
@@ -225,16 +227,23 @@ object Log4jConfiguration {
         return conf
     }
 
-    private fun convertToPattern(logType: LogType, logUse: LogUse): String {
+    private fun convertToPattern(
+        customPatterns: CustomPatterns, logType: LogType, logUse: LogUse
+    ): String {
         val pattern = logType.pattern
-        val parse = PatternParser.parse(pattern)
-        return Log4jPatternSerializer.serialize(parse, logUse)
+        val parse = PatternParser(customPatterns).parse(pattern)
+        return Log4jPatternSerializer.serialize(customPatterns, parse, logUse)
     }
 
-    fun setup(useAnsi: Boolean, lineReader: LineReader) {
-        LWJGLPatternProvider.register()
-        LWJGLLogLevels.register()
-        val configuration = createConfiguration(useAnsi, lineReader)
+    fun setup(
+        patternRegistry: PatternRegistry,
+        logLevelRegistry: LogLevelRegistry,
+        customPatterns: CustomPatterns,
+        useAnsi: Boolean,
+        lineReader: LineReader
+    ) {
+        LWJGLLogLevels.register(logLevelRegistry, customPatterns)
+        val configuration = createConfiguration(logLevelRegistry, patternRegistry, customPatterns, useAnsi, lineReader)
         Configurator.reconfigure(configuration)
         JvmLogging.init()
         System.setOut(LoggingPrintStream(SLF4JLogger(LoggerFactory.getLogger("stdout"))))
@@ -256,15 +265,14 @@ object Log4jConfiguration {
 
 object LWJGLLogLevels {
     private val FG_LWJGL = Color(0, 255, 255).styleHex
-    fun register() {
-        LogLevelRegistry.registerLevel(LogType.Fixed("LWJGL",
-            CustomPatterns.DEFAULT_PATTERN_PRINT_WITH_LOCATION))
+    fun register(logLevelRegistry: LogLevelRegistry, customPatterns: CustomPatterns) {
+        logLevelRegistry.registerLevel(LogType.Fixed("LWJGL", customPatterns.builtin.defaultPatternPrintWithLocation))
     }
 }
 
 object LWJGLPatternProvider {
-    fun register() {
-        Log4jPatternPlatformProvider.register()
-        Log4jPatternPlatformProvider.freeze()
+    fun register(patternRegistry: PatternRegistry) {
+        Log4jPatternPlatformProvider.register(patternRegistry)
+        Log4jPatternPlatformProvider.freeze(patternRegistry)
     }
 }

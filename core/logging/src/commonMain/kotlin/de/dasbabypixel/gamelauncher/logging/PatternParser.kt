@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.logging
 
-class PatternParser(private val patternRegistry: PatternRegistry) {
+class PatternParser(private val customPatterns: CustomPatterns) {
     companion object {
         const val BEGIN_FORMAT = '%'
         const val BEGIN_FORMAT_CONTENT = '{'
@@ -8,13 +8,12 @@ class PatternParser(private val patternRegistry: PatternRegistry) {
         const val END_FORMAT = '$'
 
         private val List<ParseResult>.build: ParseResult
-            get() = if (size == 1) this[0] else if (isEmpty()) ParseResult.Empty else ParseResult.Multi(
-                this)
+            get() = if (size == 1) this[0] else if (isEmpty()) ParseResult.Empty else ParseResult.Multi(this)
     }
 
     fun parse(input: String): ParseResult {
         // All the root level results
-        val state = State(patternRegistry)
+        val state = State(customPatterns)
         state.pushParser(Parser.Text())
         try {
             for (char in input) {
@@ -157,10 +156,7 @@ class PatternParser(private val patternRegistry: PatternRegistry) {
                 if (p != this) throw PatternException("State parser mismatch: Expected Format, found ${p::class.simpleName}")
                 val type = state.patternRegistry.pattern(this.type.toString())
                 state.pushParser(Text())
-                state.appender(ParseResult.Formatted(state.patternRegistry,
-                    type,
-                    results?.build,
-                    options?.build))
+                state.appender(ParseResult.Formatted(state.customPatterns, type, results?.build, options?.build))
             }
 
             override fun tryEnd(state: State) {
@@ -225,7 +221,8 @@ class PatternParser(private val patternRegistry: PatternRegistry) {
         }
     }
 
-    private class State(val patternRegistry: PatternRegistry) {
+    private class State(val customPatterns: CustomPatterns) {
+        val patternRegistry = customPatterns.patternRegistry
         val results = ArrayList<ParseResult>()
         var parserStateUnsafe: Parser? = null
         val parserState: Parser

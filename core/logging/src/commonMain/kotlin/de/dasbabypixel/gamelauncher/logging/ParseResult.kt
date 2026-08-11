@@ -36,18 +36,15 @@ sealed interface ParseResult {
     }
 
     data class Formatted(
-        val patternRegistry: PatternRegistry,
+        val customPatterns: CustomPatterns,
         val pattern: CustomPattern,
         val content: ParseResult? = null,
         val options: ParseResult? = null
     ) : ParseResult {
 
         constructor(
-            patternRegistry: PatternRegistry,
-            pattern: String,
-            options: ParseResult? = null,
-            content: ParseResult? = null
-        ) : this(patternRegistry, patternRegistry.pattern(pattern), options, content)
+            customPatterns: CustomPatterns, pattern: String, options: ParseResult? = null, content: ParseResult? = null
+        ) : this(customPatterns, customPatterns.patternRegistry.pattern(pattern), options, content)
 
         init {
             if (options != null && content == null) {
@@ -81,7 +78,7 @@ sealed interface ParseResult {
             if (simplified) return this
             val maxDepth = 500
             var depth = 0
-            var simple: ParseResult = pattern.simplifier.simplify(patternRegistry, pattern, this)
+            var simple: ParseResult = pattern.simplifier.simplify(customPatterns, pattern, this)
             while (!simple.simplified) {
                 depth++
                 simple = simple.simplify()

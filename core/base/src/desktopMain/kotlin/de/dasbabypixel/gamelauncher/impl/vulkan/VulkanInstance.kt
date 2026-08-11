@@ -1,13 +1,12 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKInstance
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.system.MemoryStack
 
-class VulkanInstance(tracker: ResourceTracker, val instance: VKInstance) :
-    AbstractGameResource(tracker) {
+class VulkanInstance(tracker: ResourceTracker, val instance: VKInstance) : AbstractGameResource(tracker) {
     init {
         if (instance.validationLayersEnabled) {
             instance.setupDebugMessenger()

@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.util.logging.getLogger
+import de.dasbabypixel.gamelauncher.logging.getLogger
 import org.lwjgl.glfw.GLFW.GLFW_CONNECTED
 import org.lwjgl.glfw.GLFW.GLFW_DISCONNECTED
 import org.lwjgl.glfw.GLFW.glfwGetMonitorContentScale
@@ -39,13 +39,11 @@ object GLFWMonitors {
         val x = intArrayOf(0)
         val y = intArrayOf(0)
         glfwGetMonitorPos(monitorId, x, y)
-        val name =
-            glfwGetMonitorName(monitorId) ?: throw IllegalStateException("Monitor without name")
+        val name = glfwGetMonitorName(monitorId) ?: throw IllegalStateException("Monitor without name")
         val sx = floatArrayOf(0F)
         val sy = floatArrayOf(0F)
         glfwGetMonitorContentScale(monitorId, sx, sy)
-        val vidMode =
-            glfwGetVideoMode(monitorId) ?: throw IllegalStateException("Monitor without VideoMode")
+        val vidMode = glfwGetVideoMode(monitorId) ?: throw IllegalStateException("Monitor without VideoMode")
         val monitor = GLFWMonitor(name,
             x[0],
             y[0],

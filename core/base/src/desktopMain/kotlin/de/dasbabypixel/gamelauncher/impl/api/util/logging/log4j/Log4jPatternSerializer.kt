@@ -1,16 +1,10 @@
 package de.dasbabypixel.gamelauncher.impl.api.util.logging.log4j
 
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_DEBUG
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_ERROR
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_FATAL
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_INFO
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_TRACE
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_UNKNOWN
-import de.dasbabypixel.gamelauncher.api.util.logging.CustomPatterns.C_WARN
-import de.dasbabypixel.gamelauncher.api.util.logging.JvmLogging
-import de.dasbabypixel.gamelauncher.api.util.logging.ParseResult
-import de.dasbabypixel.gamelauncher.api.util.logging.PatternException
 import de.dasbabypixel.gamelauncher.impl.api.util.logging.LogUse
+import de.dasbabypixel.gamelauncher.logging.CustomPatterns
+import de.dasbabypixel.gamelauncher.logging.JvmLogging
+import de.dasbabypixel.gamelauncher.logging.ParseResult
+import de.dasbabypixel.gamelauncher.logging.PatternException
 
 object Log4jPatternSerializer {
     private val serializers = HashMap<String, Serializer>()
@@ -39,8 +33,8 @@ object Log4jPatternSerializer {
         if (missing) throw PatternException("Missing patterns in platform")
     }
 
-    fun serialize(parse: ParseResult, logUse: LogUse): String {
-        val state = State(Context(logUse))
+    fun serialize(customPatterns: CustomPatterns, parse: ParseResult, logUse: LogUse): String {
+        val state = State(Context(customPatterns, logUse))
         state.serialize(if (parse.simplified) parse else parse.simplify())
         if (state.textBuilder.isNotEmpty()) {
             state.builder.append(state.textBuilder)
@@ -48,7 +42,7 @@ object Log4jPatternSerializer {
         return state.build()
     }
 
-    class Context(val logUse: LogUse)
+    class Context(val customPatterns: CustomPatterns, val logUse: LogUse)
 
     private class State(val context: Context) {
         private val styles = ArrayList<Styles>()
@@ -197,22 +191,23 @@ object Log4jPatternSerializer {
         }
 
         data object Highlight : Serializer {
-            private val colors: Map<String, String> = mapOf(
-                "FATAL" to C_FATAL,
-                "ERROR" to C_ERROR,
-                "WARN" to C_WARN,
-                "INFO" to C_INFO,
-                "DEBUG" to C_DEBUG,
-                "TRACE" to C_TRACE,
-            )
-
-            private val format = org.apache.logging.log4j.Level.values()
-                .joinToString(", ") { it.name() + "=" + (colors[it.name()] ?: C_UNKNOWN) }
-
             override fun serialize(state: State, format: ParseResult.Formatted) {
                 val content = format.assertContentNotNull()
                 format.assertOptionsNull()
-                state.pushStyle(Styles.Highlight(Highlight.format))
+
+                val colors: Map<String, String> = mapOf(
+                    "FATAL" to state.context.customPatterns.colorFatal,
+                    "ERROR" to state.context.customPatterns.colorError,
+                    "WARN" to state.context.customPatterns.colorWarn,
+                    "INFO" to state.context.customPatterns.colorInfo,
+                    "DEBUG" to state.context.customPatterns.colorDebug,
+                    "TRACE" to state.context.customPatterns.colorTrace,
+                )
+                val highlightFormat = org.apache.logging.log4j.Level.values().joinToString(", ") {
+                    it.name() + "=" + (colors[it.name()] ?: state.context.customPatterns.colorUnknown)
+                }
+
+                state.pushStyle(Styles.Highlight(highlightFormat))
                 state.serialize(content)
                 state.popStyle()
             }

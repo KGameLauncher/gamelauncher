@@ -5,16 +5,16 @@ class CustomPattern(
 ) {
     fun interface Simplifier {
         fun simplify(
-            patternRegistry: PatternRegistry, pattern: CustomPattern, parse: ParseResult.Formatted
+            customPatterns: CustomPatterns, pattern: CustomPattern, parse: ParseResult.Formatted
         ): ParseResult
     }
 
     object NativeSimplifier : Simplifier {
         override fun simplify(
-            patternRegistry: PatternRegistry, pattern: CustomPattern, parse: ParseResult.Formatted
+            customPatterns: CustomPatterns, pattern: CustomPattern, parse: ParseResult.Formatted
         ): ParseResult {
             if (parse.simplified) return parse
-            return ParseResult.Formatted(patternRegistry,
+            return ParseResult.Formatted(customPatterns,
                 parse.pattern,
                 parse.content?.simplify(),
                 parse.options?.simplify())

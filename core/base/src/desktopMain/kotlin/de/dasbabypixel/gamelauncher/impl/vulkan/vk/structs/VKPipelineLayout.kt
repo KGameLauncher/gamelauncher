@@ -1,9 +1,9 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.VK10
 import org.lwjgl.vulkan.VkPipelineLayoutCreateInfo
@@ -19,14 +19,11 @@ class VKPipelineLayout(
     companion object {
         fun create(tracker: ResourceTracker, device: VKDevice): VKPipelineLayout {
             return MemoryStack.stackPush().use { stack ->
-                val pipelineLayoutInfo =
-                    VkPipelineLayoutCreateInfo.calloc(stack).`sType$Default`().setLayoutCount(0)
+                val pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack).`sType$Default`().setLayoutCount(0)
 
                 val pPipelineLayout = stack.mallocLong(1)
-                VK10.vkCreatePipelineLayout(device.device,
-                    pipelineLayoutInfo,
-                    device.pAllocator,
-                    pPipelineLayout).vkValidate()
+                VK10.vkCreatePipelineLayout(device.device, pipelineLayoutInfo, device.pAllocator, pPipelineLayout)
+                    .vkValidate()
                 val pipelineLayout: VkPipelineLayout = pPipelineLayout.get(0)
                 VKPipelineLayout(tracker, pipelineLayout, device)
             }

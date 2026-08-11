@@ -1,5 +1,9 @@
+import de.dasbabypixel.gamelauncher.gradle.lwjglDefaultDevArgs
+import de.dasbabypixel.gamelauncher.gradle.lwjglDefaultDevInitSystemProperties
+import de.dasbabypixel.gamelauncher.gradle.lwjglMain
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
+import java.nio.charset.Charset
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -10,6 +14,19 @@ plugins {
 
 tasks.withType<AbstractKotlinCompile<*>> {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+}
+
+tasks.withType<JavaExec>().configureEach {
+    mainClass = lwjglMain
+    workingDir(project.mkdir("run"))
+    jvmArgs(lwjglDefaultDevArgs)
+    jvmArgs(lwjglDefaultDevInitSystemProperties.map { "-D${it.key}=${it.value}" })
+    jvmArgs("-Dgamelauncher.skipsysprops=true")
+    val charset = Charset.defaultCharset()
+    jvmArgs("-Dstdout.encoding=${charset.name()}", "-Dstderr.encoding=${charset.name()}")
+    standardInput = System.`in`
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
 kotlin {
@@ -24,12 +41,14 @@ kotlin {
     jvm("desktop") {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_25)
+            moduleName = "gamelauncher"
         }
     }
 
     sourceSets {
         commonMain.dependencies {
             api(projects.core.serviceLoader)
+            api(projects.core.logging)
             api(projects.core.util)
         }
         val jvmCommon by registering {

@@ -1,7 +1,7 @@
 package de.dasbabypixel.gamelauncher.impl.window
 
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.window.glfw.GLFWWindowSystem
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 

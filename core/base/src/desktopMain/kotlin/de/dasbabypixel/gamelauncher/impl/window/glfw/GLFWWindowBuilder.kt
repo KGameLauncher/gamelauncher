@@ -1,14 +1,14 @@
 package de.dasbabypixel.gamelauncher.impl.window.glfw
 
-import de.dasbabypixel.gamelauncher.api.math.Vec2i
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.VulkanAccess
 import de.dasbabypixel.gamelauncher.impl.vulkan.vkValidate
 import de.dasbabypixel.gamelauncher.impl.window.Window
 import de.dasbabypixel.gamelauncher.impl.window.WindowBuilder
+import de.dasbabypixel.gamelauncher.math.Vec2i
+import de.dasbabypixel.gamelauncher.resource.SimpleResourceTracker
 import de.dasbabypixel.gamelauncher.service.ServiceRegistry
 import de.dasbabypixel.gamelauncher.util.GameException
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWVulkan
 import org.lwjgl.system.MemoryStack
@@ -50,14 +50,11 @@ class GLFWWindowBuilder(val system: GLFWWindowSystem) : WindowBuilder {
         val handle = GLFW.glfwCreateWindow(initialWidth, initialHeight, title, 0L, 0L)
         if (handle == 0L) throw GameException("Failed to create window")
 
-        val tracker = ResourceTracker.global
+        val tracker = SimpleResourceTracker.global
 
         val surface = VulkanAccess.instance.createSurface { stack, instance ->
             val pSurface = stack.mallocLong(1)
-            GLFWVulkan.glfwCreateWindowSurface(instance.instance,
-                handle,
-                instance.pAllocator,
-                pSurface).vkValidate()
+            GLFWVulkan.glfwCreateWindowSurface(instance.instance, handle, instance.pAllocator, pSurface).vkValidate()
             pSurface.get(0)
         }
         val id = system.nextId()

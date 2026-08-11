@@ -1,9 +1,9 @@
 package de.dasbabypixel.gamelauncher.impl.vulkan
 
-import de.dasbabypixel.gamelauncher.api.resource.AbstractGameResource
-import de.dasbabypixel.gamelauncher.api.resource.ResourceTracker
-import de.dasbabypixel.gamelauncher.api.util.concurrent.CompletableFuture
 import de.dasbabypixel.gamelauncher.impl.vulkan.vk.structs.VKCommandBuffer
+import de.dasbabypixel.gamelauncher.resource.AbstractGameResource
+import de.dasbabypixel.gamelauncher.resource.ResourceTracker
+import de.dasbabypixel.gamelauncher.util.concurrent.CompletableFuture
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.vulkan.KHRSwapchain
 import org.lwjgl.vulkan.VK10
@@ -30,8 +30,7 @@ class VulkanCommandBuffer(
         swapChain: VulkanSwapChain, imageViews: VulkanImageViews, imageIndex: Int
     ) {
         MemoryStack.stackPush().use { stack ->
-            VK10.vkBeginCommandBuffer(commandBuffer.handle,
-                VkCommandBufferBeginInfo.calloc(stack).`sType$Default`())
+            VK10.vkBeginCommandBuffer(commandBuffer.handle, VkCommandBufferBeginInfo.calloc(stack).`sType$Default`())
             val swapChainExtent = swapChain.extent
 
             transitionImageLayout(swapChain,
@@ -44,11 +43,7 @@ class VulkanCommandBuffer(
                 VK13.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT)
 
             val clearColor = VkClearValue.calloc(stack)
-                .color(VkClearColorValue.calloc(stack)
-                    .float32(0, 0F)
-                    .float32(1, 0F)
-                    .float32(2, 0F)
-                    .float32(3, 1F))
+                .color(VkClearColorValue.calloc(stack).float32(0, 0F).float32(1, 0F).float32(2, 0F).float32(3, 1F))
             val attachmentInfo = VkRenderingAttachmentInfo.calloc(1, stack)
                 .`sType$Default`()
                 .imageView(imageViews.swapChainImageViews[imageIndex].handle)
@@ -129,10 +124,8 @@ class VulkanCommandBuffer(
                     .levelCount(1)
                     .baseArrayLayer(0)
                     .layerCount(1))
-            val dependencyInfo = VkDependencyInfo.calloc(stack)
-                .`sType$Default`()
-                .dependencyFlags(0)
-                .pImageMemoryBarriers(barrier)
+            val dependencyInfo =
+                VkDependencyInfo.calloc(stack).`sType$Default`().dependencyFlags(0).pImageMemoryBarriers(barrier)
 
             VK13.vkCmdPipelineBarrier2(commandBuffer.handle, dependencyInfo)
         }

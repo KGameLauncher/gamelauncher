@@ -1,6 +1,6 @@
 package de.dasbabypixel.gamelauncher.impl.window
 
-import de.dasbabypixel.gamelauncher.api.resource.GameResource
+import de.dasbabypixel.gamelauncher.resource.GameResource
 
 interface WindowSystem : GameResource {
     fun createWindow(): WindowBuilder
